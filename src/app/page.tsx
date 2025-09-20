@@ -1,3 +1,6 @@
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -9,6 +12,19 @@ export default function HomePage() {
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Corporate Skill Certification Platform - Track employee growth, generate verified certificates
           </p>
+
+          <div className="flex justify-center gap-4 mb-16">
+            <Button asChild size="lg">
+              <Link href="/auth/signup?type=company">
+                Start Free Trial
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/auth/signin?type=company">
+                Sign In
+              </Link>
+            </Button>
+          </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-16">
             <div className="bg-white p-8 rounded-xl shadow-lg">
@@ -29,6 +45,13 @@ export default function HomePage() {
                   <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
                   <span>Privacy-first data controls</span>
                 </div>
+              </div>
+              <div className="mt-6">
+                <Button asChild className="w-full">
+                  <Link href="/auth/signup?type=company">
+                    Get Started for Companies
+                  </Link>
+                </Button>
               </div>
             </div>
 
@@ -51,12 +74,19 @@ export default function HomePage() {
                   <span>Portable career credentials</span>
                 </div>
               </div>
+              <div className="mt-6">
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/auth/signup?type=employee">
+                    Join Your Team
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
 
           <div className="mt-12">
             <p className="text-gray-500">
-              🚧 Platform in development - MVP coming soon
+              🚀 Authentication system ready - Start exploring WorkLedger
             </p>
           </div>
         </div>
