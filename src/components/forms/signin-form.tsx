@@ -34,8 +34,8 @@ export function SignInForm({ userType }: SignInFormProps) {
 
       if (result?.error) {
         setError("Invalid email or password")
-      } else {
-        // Redirect based on user type
+      } else if (result?.ok) {
+        // Successful login - redirect based on user type
         if (userType === "company") {
           router.push("/dashboard")
         } else {

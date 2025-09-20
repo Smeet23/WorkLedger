@@ -9,7 +9,9 @@ export const authConfig = {
   },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/error",
   },
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: "credentials",
