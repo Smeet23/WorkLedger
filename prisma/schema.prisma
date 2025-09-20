@@ -72,6 +72,7 @@ model Company {
   certificates Certificate[]
   integrations Integration[]
   auditLogs   AuditLog[]
+  invitations Invitation[]
 
   // Metadata
   createdAt   DateTime         @default(now())
@@ -363,6 +364,38 @@ model Session {
   createdAt   DateTime @default(now())
 
   @@map("sessions")
+}
+
+// Employee Invitation Management
+model Invitation {
+  id          String   @id @default(cuid())
+  token       String   @unique @default(cuid())
+
+  // Invitation details
+  email       String
+  firstName   String
+  lastName    String
+  role        EmployeeRole @default(OTHER)
+  title       String?
+  department  String?
+
+  // Company relationship
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Invitation status
+  status      String   @default("pending") // pending, accepted, expired, cancelled
+  invitedBy   String   // Email of the person who sent the invitation
+
+  // Timestamps
+  expiresAt   DateTime @default(dbgenerated("NOW() + INTERVAL '7 days'"))
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([token])
+  @@index([email, companyId])
+  @@map("invitations")
 }
 
 // Indexes for Performance

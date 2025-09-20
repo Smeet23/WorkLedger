@@ -1,5 +1,6 @@
 import { requireCompanyAdmin, getUserWithCompany } from "@/lib/session"
 import { redirect } from "next/navigation"
+import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
@@ -13,6 +14,34 @@ export default async function CompanyDashboard() {
   }
 
   const { company, employee } = userInfo
+
+  // Fetch actual stats
+  const [employeeCount, certificateCount, skillCount, pendingInvitations] = await Promise.all([
+    db.employee.count({
+      where: {
+        companyId: company.id,
+        isActive: true
+      }
+    }),
+    db.certificate.count({
+      where: {
+        companyId: company.id
+      }
+    }),
+    db.skillRecord.count({
+      where: {
+        employee: {
+          companyId: company.id
+        }
+      }
+    }),
+    db.invitation.count({
+      where: {
+        companyId: company.id,
+        status: "pending"
+      }
+    })
+  ])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,15 +88,15 @@ export default async function CompanyDashboard() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">0</div>
+                    <div className="text-2xl font-bold text-blue-600">{employeeCount}</div>
                     <div className="text-sm text-gray-600">Active Employees</div>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">0</div>
+                    <div className="text-2xl font-bold text-green-600">{certificateCount}</div>
                     <div className="text-sm text-gray-600">Certificates Issued</div>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">0</div>
+                    <div className="text-2xl font-bold text-purple-600">{skillCount}</div>
                     <div className="text-sm text-gray-600">Skills Tracked</div>
                   </div>
                 </div>
@@ -85,8 +114,10 @@ export default async function CompanyDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full">
-                  Manage Employees
+                <Button asChild className="w-full">
+                  <Link href="/dashboard/employees">
+                    Manage Employees
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
