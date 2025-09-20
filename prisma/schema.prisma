@@ -1,0 +1,370 @@
+// This is your Prisma schema file for WorkLedger
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum SubscriptionTier {
+  STARTUP
+  GROWTH
+  ENTERPRISE
+}
+
+enum EmployeeRole {
+  DEVELOPER
+  DESIGNER
+  MANAGER
+  SALES
+  MARKETING
+  OTHER
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum CertificateStatus {
+  DRAFT
+  ISSUED
+  REVOKED
+}
+
+enum IntegrationType {
+  GITHUB
+  GITLAB
+  SALESFORCE
+  HUBSPOT
+  JIRA
+  SLACK
+  OTHER
+}
+
+// Core Company Model
+model Company {
+  id          String           @id @default(cuid())
+  name        String
+  domain      String           @unique
+  logoUrl     String?
+  website     String?
+  industry    String?
+  size        String?
+
+  // Subscription
+  tier        SubscriptionTier @default(STARTUP)
+  isActive    Boolean          @default(true)
+  trialEnds   DateTime?
+
+  // Settings
+  settings    CompanySettings?
+
+  // Relationships
+  employees   Employee[]
+  certificates Certificate[]
+  integrations Integration[]
+  auditLogs   AuditLog[]
+
+  // Metadata
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("companies")
+}
+
+// Company Settings & Privacy Controls
+model CompanySettings {
+  id               String   @id @default(cuid())
+  companyId        String   @unique
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Privacy Settings
+  shareSkills      Boolean  @default(true)
+  shareAchievements Boolean @default(true)
+  shareProjectTypes Boolean @default(true)
+  shareTraining    Boolean  @default(true)
+  shareTenure      Boolean  @default(true)
+
+  // Certificate Customization
+  certificateTemplate String?
+  companyBranding  Boolean  @default(false)
+  customFields     Json?    // Store additional custom fields
+
+  // Automation Settings
+  autoIssueEnabled Boolean  @default(false)
+  minTrackingDays  Int      @default(30)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("company_settings")
+}
+
+// Employee Model
+model Employee {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  role            EmployeeRole  @default(OTHER)
+  title           String?
+  department      String?
+
+  // Company Relationship
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Employment Details
+  startDate       DateTime      @default(now())
+  endDate         DateTime?
+  isActive        Boolean       @default(true)
+
+  // External Integrations
+  githubUsername  String?
+  githubId        String?
+  salesforceId    String?
+
+  // Relationships
+  certificates    Certificate[]
+  skillRecords    SkillRecord[]
+  activities      GitHubActivity[]
+
+  // Metadata
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([companyId, email])
+  @@map("employees")
+}
+
+// Skills Master Table
+model Skill {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  category    String        // e.g., "Programming Language", "Framework", "Tool"
+  description String?
+
+  // Relationships
+  skillRecords SkillRecord[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("skills")
+}
+
+// Employee Skill Tracking
+model SkillRecord {
+  id          String     @id @default(cuid())
+  employeeId  String
+  employee    Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  skillId     String
+  skill       Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  level       SkillLevel @default(BEGINNER)
+  confidence  Float?     // 0.0 - 1.0 confidence score
+
+  // Evidence tracking
+  linesOfCode Int?
+  projectsUsed Int?
+  lastUsed    DateTime?
+
+  // Auto-detected vs manual
+  isAutoDetected Boolean @default(false)
+  source         String? // e.g., "github", "manual", "training"
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([employeeId, skillId])
+  @@map("skill_records")
+}
+
+// GitHub Activity Tracking
+model GitHubActivity {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // Repository Info
+  repoName        String
+  repoFullName    String
+  isPrivate       Boolean   @default(false)
+
+  // Activity Data
+  commits         Int       @default(0)
+  pullRequests    Int       @default(0)
+  linesAdded      Int       @default(0)
+  linesDeleted    Int       @default(0)
+  filesChanged    Int       @default(0)
+
+  // Language Detection
+  languages       Json      // Store language percentages
+  frameworks      Json?     // Detected frameworks
+
+  // Time Period
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([employeeId, repoName, periodStart])
+  @@map("github_activities")
+}
+
+// Digital Certificates
+model Certificate {
+  id              String            @id @default(cuid())
+  verificationId  String            @unique @default(cuid())
+
+  // Employee & Company
+  employeeId      String
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Certificate Data
+  title           String
+  description     String?
+  status          CertificateStatus @default(DRAFT)
+
+  // Time Period
+  periodStart     DateTime
+  periodEnd       DateTime
+  issueDate       DateTime          @default(now())
+  expiryDate      DateTime?
+
+  // Certificate Content (JSON)
+  skillsData      Json              // Skills acquired/demonstrated
+  achievements    Json              // Key achievements
+  metrics         Json?             // Performance metrics (sanitized)
+
+  // Security
+  digitalSignature String?          // Cryptographic signature
+  hashValue       String?           // Content hash for verification
+
+  // Metadata
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("certificates")
+}
+
+// External Integrations
+model Integration {
+  id           String          @id @default(cuid())
+  companyId    String
+  company      Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type         IntegrationType
+  name         String          // e.g., "GitHub Enterprise"
+
+  // Configuration
+  config       Json            // Store integration-specific config
+  credentials  Json?           // Encrypted credentials
+
+  // Status
+  isActive     Boolean         @default(true)
+  lastSync     DateTime?
+  syncInterval Int?            // Minutes between syncs
+
+  // Metadata
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([companyId, type, name])
+  @@map("integrations")
+}
+
+// Audit Logging for Security & Compliance
+model AuditLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Event Details
+  action      String   // e.g., "certificate_issued", "data_accessed"
+  resource    String   // What was affected
+  resourceId  String?  // ID of the affected resource
+
+  // Actor
+  actorType   String   // "employee", "admin", "system"
+  actorId     String?  // ID of who performed the action
+  actorEmail  String?
+
+  // Context
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?    // Additional context
+
+  // Timestamp
+  timestamp   DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// User Accounts (separate from employees for access control)
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String?  // Hashed password
+
+  // Profile
+  firstName   String?
+  lastName    String?
+  avatarUrl   String?
+
+  // Account Status
+  isActive    Boolean  @default(true)
+  emailVerified Boolean @default(false)
+
+  // Role & Permissions
+  role        String   @default("user") // "admin", "company_admin", "user"
+
+  // Password Reset
+  resetToken  String?
+  resetExpires DateTime?
+
+  // Sessions
+  sessions    Session[]
+
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLogin   DateTime?
+
+  @@map("users")
+}
+
+// Session Management
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token       String   @unique
+  expires     DateTime
+
+  // Session Context
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@map("sessions")
+}
+
+// Indexes for Performance
+// @@index([companyId]) // Already covered by foreign keys
+// @@index([employeeId]) // Already covered by foreign keys
