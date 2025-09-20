@@ -11,21 +11,19 @@ export const authConfig = {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
-  trustHost: true,
   providers: [
     CredentialsProvider({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        userType: { label: "User Type", type: "text" } // "company" or "employee"
+        userType: { label: "User Type", type: "text" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
-        // Check if user exists
         const user = await db.user.findUnique({
           where: {
             email: credentials.email,
@@ -36,7 +34,7 @@ export const authConfig = {
           return null
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password as string)
+        const isPasswordValid = await compare(credentials.password, user.password)
 
         if (!isPasswordValid) {
           return null
@@ -80,4 +78,4 @@ export const authConfig = {
   },
 }
 
-export const { auth, signIn, signOut } = NextAuth(authConfig)
+export default NextAuth(authConfig)

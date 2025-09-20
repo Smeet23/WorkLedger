@@ -1,9 +1,10 @@
-import { auth } from "@/lib/auth"
+import { getServerSession as getSession } from "next-auth"
+import { authConfig } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "./db"
 
 export async function getServerSession() {
-  return await auth()
+  return await getSession(authConfig)
 }
 
 export async function requireAuth() {
