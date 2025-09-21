@@ -1,0 +1,516 @@
+import { db } from '@/lib/db'
+import { CertificateStatus } from '@prisma/client'
+import { hashString, generateSignature } from '@/lib/crypto'
+import QRCode from 'qrcode'
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, pdf } from '@react-pdf/renderer'
+import { format } from 'date-fns'
+
+interface CertificateData {
+  employee: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+    title?: string
+    department?: string
+  }
+  company: {
+    id: string
+    name: string
+    domain: string
+    logoUrl?: string
+  }
+  skills: Array<{
+    name: string
+    category: string
+    level: string
+    confidence: number
+    projectCount: number
+  }>
+  achievements: Array<{
+    title: string
+    description: string
+    date: Date
+  }>
+  period: {
+    start: Date
+    end: Date
+  }
+  metrics: {
+    totalProjects: number
+    totalCommits: number
+    primaryLanguages: string[]
+    frameworks: string[]
+  }
+}
+
+export class CertificateGenerator {
+  /**
+   * Generate a certificate for an employee
+   */
+  async generateCertificate(
+    employeeId: string,
+    periodStart: Date,
+    periodEnd: Date
+  ): Promise<string> {
+    // Get employee data with company
+    const employee = await db.employee.findUnique({
+      where: { id: employeeId },
+      include: {
+        company: {
+          include: { settings: true }
+        },
+        skillRecords: {
+          include: { skill: true },
+          where: {
+            lastUsed: {
+              gte: periodStart,
+              lte: periodEnd
+            }
+          }
+        },
+        repositories: {
+          include: { activities: true }
+        }
+      }
+    })
+
+    if (!employee) {
+      throw new Error('Employee not found')
+    }
+
+    // Prepare certificate data
+    const certificateData = await this.prepareCertificateData(
+      employee,
+      periodStart,
+      periodEnd
+    )
+
+    // Apply privacy settings
+    const sanitizedData = await this.applyPrivacySettings(
+      certificateData,
+      employee.company.settings
+    )
+
+    // Create certificate record
+    const certificate = await db.certificate.create({
+      data: {
+        employeeId: employee.id,
+        companyId: employee.companyId,
+        title: `Professional Skills Certificate`,
+        description: `Skills and achievements for ${employee.firstName} ${employee.lastName}`,
+        status: CertificateStatus.DRAFT,
+        periodStart,
+        periodEnd,
+        skillsData: sanitizedData.skills,
+        achievements: sanitizedData.achievements,
+        metrics: sanitizedData.metrics
+      }
+    })
+
+    // Generate PDF
+    const pdfBuffer = await this.generatePDF(certificate.id, sanitizedData)
+
+    // Generate QR code for verification
+    const qrCodeUrl = await this.generateQRCode(certificate.verificationId)
+
+    // Create digital signature
+    const signature = await this.createDigitalSignature(certificate.id, pdfBuffer)
+
+    // Store certificate file
+    await db.certificateFile.create({
+      data: {
+        certificateId: certificate.id,
+        fileUrl: `/certificates/${certificate.id}.pdf`, // In production, upload to S3/Cloudinary
+        fileHash: hashString(pdfBuffer.toString()),
+        fileSize: pdfBuffer.length,
+        qrCodeUrl,
+        publicKey: process.env.CERTIFICATE_SIGNING_KEY || '',
+        signature
+      }
+    })
+
+    // Update certificate status
+    await db.certificate.update({
+      where: { id: certificate.id },
+      data: {
+        status: CertificateStatus.ISSUED,
+        digitalSignature: signature,
+        hashValue: hashString(pdfBuffer.toString())
+      }
+    })
+
+    return certificate.id
+  }
+
+  /**
+   * Prepare certificate data from employee records
+   */
+  private async prepareCertificateData(
+    employee: any,
+    periodStart: Date,
+    periodEnd: Date
+  ): Promise<CertificateData> {
+    // Aggregate skills
+    const skills = employee.skillRecords.map((record: any) => ({
+      name: record.skill.name,
+      category: record.skill.category,
+      level: record.level,
+      confidence: record.confidence || 0,
+      projectCount: record.projectsUsed || 0
+    }))
+
+    // Calculate metrics
+    const totalProjects = employee.repositories.length
+    const totalCommits = employee.repositories.reduce((sum: number, repo: any) => {
+      const activities = repo.activities.filter((a: any) =>
+        a.periodStart >= periodStart && a.periodEnd <= periodEnd
+      )
+      return sum + activities.reduce((s: number, a: any) => s + a.commits, 0)
+    }, 0)
+
+    // Extract primary languages and frameworks
+    const languages = new Set<string>()
+    const frameworks = new Set<string>()
+
+    employee.repositories.forEach((repo: any) => {
+      if (repo.primaryLanguage) languages.add(repo.primaryLanguage)
+      if (repo.frameworks) {
+        (repo.frameworks as string[]).forEach(f => frameworks.add(f))
+      }
+    })
+
+    // Generate achievements
+    const achievements = []
+
+    if (totalProjects > 10) {
+      achievements.push({
+        title: 'Prolific Contributor',
+        description: `Contributed to ${totalProjects} projects`,
+        date: new Date()
+      })
+    }
+
+    if (skills.length > 10) {
+      achievements.push({
+        title: 'Polyglot Developer',
+        description: `Demonstrated proficiency in ${skills.length} technologies`,
+        date: new Date()
+      })
+    }
+
+    if (totalCommits > 100) {
+      achievements.push({
+        title: 'Active Developer',
+        description: `Made ${totalCommits} commits during the period`,
+        date: new Date()
+      })
+    }
+
+    return {
+      employee: {
+        id: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        title: employee.title,
+        department: employee.department
+      },
+      company: {
+        id: employee.company.id,
+        name: employee.company.name,
+        domain: employee.company.domain,
+        logoUrl: employee.company.logoUrl
+      },
+      skills,
+      achievements,
+      period: {
+        start: periodStart,
+        end: periodEnd
+      },
+      metrics: {
+        totalProjects,
+        totalCommits,
+        primaryLanguages: Array.from(languages),
+        frameworks: Array.from(frameworks)
+      }
+    }
+  }
+
+  /**
+   * Apply privacy settings to certificate data
+   */
+  private async applyPrivacySettings(
+    data: CertificateData,
+    settings: any
+  ): Promise<CertificateData> {
+    const sanitized = { ...data }
+
+    // Apply privacy settings
+    if (!settings?.shareSkills) {
+      sanitized.skills = sanitized.skills.map(skill => ({
+        ...skill,
+        confidence: 0 // Hide confidence scores
+      }))
+    }
+
+    if (!settings?.shareAchievements) {
+      sanitized.achievements = []
+    }
+
+    if (!settings?.shareProjectTypes) {
+      sanitized.metrics.frameworks = []
+    }
+
+    // Never share sensitive metrics
+    sanitized.metrics.totalCommits = Math.round(sanitized.metrics.totalCommits / 10) * 10 // Round to nearest 10
+
+    return sanitized
+  }
+
+  /**
+   * Generate PDF certificate
+   */
+  private async generatePDF(
+    certificateId: string,
+    data: CertificateData
+  ): Promise<Buffer> {
+    const MyDocument = () => (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.companyName}>{data.company.name}</Text>
+            <Text style={styles.title}>Certificate of Professional Skills</Text>
+          </View>
+
+          {/* Employee Info */}
+          <View style={styles.employeeSection}>
+            <Text style={styles.employeeName}>
+              {data.employee.firstName} {data.employee.lastName}
+            </Text>
+            {data.employee.title && (
+              <Text style={styles.employeeTitle}>{data.employee.title}</Text>
+            )}
+            <Text style={styles.period}>
+              {format(data.period.start, 'MMMM yyyy')} - {format(data.period.end, 'MMMM yyyy')}
+            </Text>
+          </View>
+
+          {/* Skills Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Technical Skills</Text>
+            <View style={styles.skillsGrid}>
+              {data.skills.slice(0, 12).map((skill, index) => (
+                <View key={index} style={styles.skillItem}>
+                  <Text style={styles.skillName}>{skill.name}</Text>
+                  <Text style={styles.skillLevel}>{skill.level}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Achievements */}
+          {data.achievements.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Key Achievements</Text>
+              {data.achievements.map((achievement, index) => (
+                <View key={index} style={styles.achievementItem}>
+                  <Text style={styles.achievementTitle}>{achievement.title}</Text>
+                  <Text style={styles.achievementDesc}>{achievement.description}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Metrics */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Performance Metrics</Text>
+            <View style={styles.metricsGrid}>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricValue}>{data.metrics.totalProjects}</Text>
+                <Text style={styles.metricLabel}>Projects</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricValue}>{data.skills.length}</Text>
+                <Text style={styles.metricLabel}>Skills</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricValue}>{data.metrics.primaryLanguages.length}</Text>
+                <Text style={styles.metricLabel}>Languages</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.verificationId}>
+              Verification ID: {certificateId}
+            </Text>
+            <Text style={styles.issueDate}>
+              Issued on {format(new Date(), 'MMMM dd, yyyy')}
+            </Text>
+          </View>
+        </Page>
+      </Document>
+    )
+
+    const pdfBlob = await pdf(MyDocument()).toBlob()
+    const buffer = await pdfBlob.arrayBuffer()
+    return Buffer.from(buffer)
+  }
+
+  /**
+   * Generate QR code for verification
+   */
+  private async generateQRCode(verificationId: string): Promise<string> {
+    const verificationUrl = `${process.env.APP_URL}/verify/${verificationId}`
+    const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+      width: 200,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    })
+    return qrCodeDataUrl
+  }
+
+  /**
+   * Create digital signature for certificate
+   */
+  private async createDigitalSignature(
+    certificateId: string,
+    pdfBuffer: Buffer
+  ): Promise<string> {
+    const dataToSign = `${certificateId}:${hashString(pdfBuffer.toString())}`
+    const privateKey = process.env.CERTIFICATE_SIGNING_KEY || ''
+
+    // In production, use proper RSA key pair
+    // For now, use simple HMAC
+    const signature = hashString(`${dataToSign}:${privateKey}`)
+    return signature
+  }
+}
+
+// PDF Styles
+const styles = StyleSheet.create({
+  page: {
+    padding: 40,
+    backgroundColor: '#ffffff',
+    fontFamily: 'Helvetica'
+  },
+  header: {
+    marginBottom: 30,
+    textAlign: 'center'
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#1a1a1a'
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginBottom: 5
+  },
+  employeeSection: {
+    marginBottom: 30,
+    textAlign: 'center'
+  },
+  employeeName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 5
+  },
+  employeeTitle: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 5
+  },
+  period: {
+    fontSize: 12,
+    color: '#999999'
+  },
+  section: {
+    marginBottom: 20
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#1a1a1a',
+    borderBottom: '1px solid #e5e7eb',
+    paddingBottom: 5
+  },
+  skillsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10
+  },
+  skillItem: {
+    backgroundColor: '#f3f4f6',
+    padding: 8,
+    borderRadius: 4,
+    marginRight: 10,
+    marginBottom: 10
+  },
+  skillName: {
+    fontSize: 11,
+    fontWeight: 'bold'
+  },
+  skillLevel: {
+    fontSize: 9,
+    color: '#666666',
+    marginTop: 2
+  },
+  achievementItem: {
+    marginBottom: 10
+  },
+  achievementTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 2
+  },
+  achievementDesc: {
+    fontSize: 10,
+    color: '#666666'
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around'
+  },
+  metricItem: {
+    textAlign: 'center'
+  },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2563eb'
+  },
+  metricLabel: {
+    fontSize: 10,
+    color: '#666666',
+    marginTop: 2
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 40,
+    right: 40,
+    borderTop: '1px solid #e5e7eb',
+    paddingTop: 10,
+    textAlign: 'center'
+  },
+  verificationId: {
+    fontSize: 10,
+    color: '#666666',
+    marginBottom: 5
+  },
+  issueDate: {
+    fontSize: 10,
+    color: '#999999'
+  }
+})

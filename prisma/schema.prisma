@@ -138,6 +138,9 @@ model Employee {
   certificates    Certificate[]
   skillRecords    SkillRecord[]
   activities      GitHubActivity[]
+  githubConnection GitHubConnection?
+  repositories    Repository[]
+  skillEvolutions SkillEvolution[]
 
   // Metadata
   createdAt       DateTime      @default(now())
@@ -156,6 +159,7 @@ model Skill {
 
   // Relationships
   skillRecords SkillRecord[]
+  skillEvolutions SkillEvolution[]
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -254,6 +258,9 @@ model Certificate {
   // Security
   digitalSignature String?          // Cryptographic signature
   hashValue       String?           // Content hash for verification
+
+  // File
+  certificateFile CertificateFile?
 
   // Metadata
   createdAt       DateTime          @default(now())
@@ -396,6 +403,226 @@ model Invitation {
   @@index([token])
   @@index([email, companyId])
   @@map("invitations")
+}
+
+// GitHub Connection for OAuth
+model GitHubConnection {
+  id              String   @id @default(cuid())
+  employeeId      String   @unique
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // GitHub OAuth Data
+  githubUserId    String   @unique
+  githubUsername  String
+  accessToken     String   // Encrypted
+  refreshToken    String?  // Encrypted
+  scope          String?
+
+  // Connection Status
+  isActive        Boolean  @default(true)
+  lastSync        DateTime?
+
+  // Metadata
+  connectedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("github_connections")
+}
+
+// Repository Tracking
+model Repository {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // Repository Info
+  githubRepoId    String   @unique
+  name            String
+  fullName        String
+  isPrivate       Boolean  @default(false)
+  isFork          Boolean  @default(false)
+
+  // Repository Details
+  description     String?
+  homepage        String?
+  defaultBranch   String?
+  createdAt       DateTime
+  pushedAt        DateTime?
+
+  // Repository Stats
+  stars           Int      @default(0)
+  forks           Int      @default(0)
+  watchers        Int      @default(0)
+  size            Int      @default(0)
+  openIssues      Int      @default(0)
+
+  // Language Data
+  primaryLanguage String?
+  languages       Json     // {language: percentage}
+
+  // Detected Frameworks
+  frameworks      Json?    // ["react", "nextjs", etc]
+
+  // Activity
+  lastActivityAt  DateTime?
+  totalCommits    Int      @default(0)
+
+  // Relationships
+  activities      RepositoryActivity[]
+  commits         Commit[]
+
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@map("repositories")
+}
+
+// Repository Activity Tracking
+model RepositoryActivity {
+  id              String     @id @default(cuid())
+  repositoryId    String
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  // Activity Period
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  // Contribution Metrics
+  commits         Int        @default(0)
+  pullRequests    Int        @default(0)
+  issues          Int        @default(0)
+  reviews         Int        @default(0)
+
+  // Code Metrics
+  linesAdded      Int        @default(0)
+  linesDeleted    Int        @default(0)
+  filesChanged    Int        @default(0)
+
+  // Detected Skills
+  detectedSkills  Json       // Skills found in this period
+
+  createdAt       DateTime   @default(now())
+
+  @@unique([repositoryId, periodStart, periodEnd])
+  @@map("repository_activities")
+}
+
+// Skill Evolution Tracking
+model SkillEvolution {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  skillId         String
+  skill           Skill     @relation(fields: [skillId], references: [id])
+
+  // Evolution Data
+  date            DateTime
+  level           SkillLevel
+  confidence      Float     // 0.0 - 1.0
+
+  // Evidence
+  evidenceType    String    // "github", "training", "project", etc
+  evidenceData    Json      // Context about how skill was demonstrated
+
+  // Metrics at this point
+  totalProjects   Int       @default(0)
+  totalLines      Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+
+  @@index([employeeId, skillId, date])
+  @@map("skill_evolutions")
+}
+
+// Certificate Files Storage
+model CertificateFile {
+  id              String      @id @default(cuid())
+  certificateId   String      @unique
+  certificate     Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
+  // File Data
+  fileUrl         String      // URL to PDF file
+  fileHash        String      // SHA-256 hash of file
+  fileSize        Int         // Size in bytes
+
+  // QR Code
+  qrCodeUrl       String?     // URL to QR code image
+
+  // Verification
+  publicKey       String      // Public key for verification
+  signature       String      // Digital signature
+
+  createdAt       DateTime    @default(now())
+
+  @@map("certificate_files")
+}
+
+// Job Queue for Background Processing
+model JobQueue {
+  id              String   @id @default(cuid())
+
+  // Job Info
+  type            String   // "github_sync", "skill_analysis", "certificate_generation"
+  status          String   // "pending", "processing", "completed", "failed"
+  priority        Int      @default(0)
+
+  // Job Data
+  payload         Json     // Job-specific data
+  result          Json?    // Job result data
+  error           String?  // Error message if failed
+
+  // Timing
+  scheduledFor    DateTime @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  // Retry Logic
+  attempts        Int      @default(0)
+  maxAttempts     Int      @default(3)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([type, status])
+  @@index([scheduledFor])
+  @@map("job_queue")
+}
+
+// Commit Tracking
+model Commit {
+  id              String     @id @default(cuid())
+  repositoryId    String
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  // Commit Info
+  sha             String     @unique
+  message         String
+  authorName      String
+  authorEmail     String
+  authorDate      DateTime
+  committerName   String?
+  committerEmail  String?
+  commitDate      DateTime
+
+  // Commit Stats
+  additions       Int        @default(0)
+  deletions       Int        @default(0)
+  filesChanged    Int        @default(0)
+
+  // Files
+  files           Json?      // Array of file paths changed
+
+  // GitHub URLs
+  htmlUrl         String?
+  apiUrl          String?
+
+  // Parent commits
+  parentShas      String[]   // Array of parent commit SHAs
+
+  createdAt       DateTime   @default(now())
+
+  @@index([repositoryId, authorDate])
+  @@index([authorEmail])
+  @@map("commits")
 }
 
 // Indexes for Performance

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { GitHubIntegrationWrapper } from "@/components/github/github-integration-wrapper"
 import Link from "next/link"
 
 export default async function CompanyDashboard() {
@@ -122,19 +123,7 @@ export default async function CompanyDashboard() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">🔗 GitHub Integration</CardTitle>
-                <CardDescription>
-                  Connect GitHub for automatic skill tracking
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Setup GitHub
-                </Button>
-              </CardContent>
-            </Card>
+            <GitHubIntegrationWrapper />
 
             <Card>
               <CardHeader>
