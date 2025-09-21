@@ -64,7 +64,7 @@ export default async function InviteEmployeePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <InviteEmployeeForm companyId={company.id} companyDomain={company.domain} />
+              <InviteEmployeeForm companyDomain={company.domain} />
             </CardContent>
           </Card>
         </div>

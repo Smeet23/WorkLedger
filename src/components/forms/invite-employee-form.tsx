@@ -23,7 +23,7 @@ const employeeRoles = [
   { value: 'OTHER', label: 'Other' },
 ]
 
-export function InviteEmployeeForm({ companyId, companyDomain }: InviteEmployeeFormProps) {
+export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormProps, 'companyId'>) {
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -44,15 +44,14 @@ export function InviteEmployeeForm({ companyId, companyDomain }: InviteEmployeeF
     setSuccess("")
 
     try {
-      const response = await fetch('/api/employees/invite', {
+      const response = await fetch('/api/company/invitations/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...formData,
-          companyId,
-          companyDomain,
+          sendEmail: true,
         }),
       })
 

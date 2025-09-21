@@ -156,10 +156,16 @@ export default async function CertificatesPage() {
                               View
                             </Button>
                           </a>
-                          <Button variant="outline" size="sm" className="flex-1">
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </Button>
+                          <a
+                            href={`/api/certificates/${certificate.id}/pdf`}
+                            download={`certificate-${certificate.verificationId}.pdf`}
+                            className="flex-1"
+                          >
+                            <Button variant="outline" size="sm" className="w-full">
+                              <Download className="w-4 h-4 mr-2" />
+                              PDF
+                            </Button>
+                          </a>
                         </div>
                       </div>
                     </CardContent>

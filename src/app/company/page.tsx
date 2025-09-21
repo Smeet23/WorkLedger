@@ -216,9 +216,11 @@ export default async function CompanyDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full" disabled>
-                Coming Soon
-              </Button>
+              <Link href="/company/skills">
+                <Button variant="outline" className="w-full">
+                  View Skills Matrix
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 

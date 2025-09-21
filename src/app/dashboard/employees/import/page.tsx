@@ -106,10 +106,9 @@ export default async function BulkImportPage() {
               </div>
 
               <div className="mt-6 pt-6 border-t">
-                <Button variant="outline" className="w-full sm:w-auto">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download CSV Template
-                </Button>
+                <p className="text-sm text-gray-600">
+                  You can download the template directly from the form below.
+                </p>
               </div>
             </CardContent>
           </Card>
