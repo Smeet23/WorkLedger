@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { GitHubIntegrationWrapper } from "@/components/github/github-integration-wrapper"
 import Link from "next/link"
 import { db } from "@/lib/db"
-import { Trophy, Code, GitBranch, Star, Award, Download } from 'lucide-react'
+import { Trophy, Code, GitBranch, Star, Award, Download, GitCommitHorizontal, Activity } from 'lucide-react'
 import { format, formatDistance } from 'date-fns'
 
 export default async function EmployeePortal() {
@@ -167,7 +167,9 @@ export default async function EmployeePortal() {
                     <div className="text-3xl font-bold text-purple-600">{totalActivity.commits}</div>
                     <div className="text-sm text-gray-600">Total Commits</div>
                     {repositoryCount > 0 && (
-                      <div className="text-xs text-purple-500 mt-1">{repositoryCount} repos</div>
+                      <div className="text-xs text-purple-500 mt-1">
+                        {repositoryCount} repos • {Math.round(totalActivity.commits / repositoryCount)} avg
+                      </div>
                     )}
                   </div>
                   <div className="text-center p-4 bg-orange-50 rounded-lg">
@@ -251,9 +253,11 @@ export default async function EmployeePortal() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  View Progress
-                </Button>
+                <Link href="/employee/skills">
+                  <Button variant="outline" className="w-full">
+                    View Progress
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -265,9 +269,11 @@ export default async function EmployeePortal() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Edit Profile
-                </Button>
+                <Link href="/employee/profile/edit">
+                  <Button variant="outline" className="w-full">
+                    Edit Profile
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -279,9 +285,11 @@ export default async function EmployeePortal() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  View Public Profile
-                </Button>
+                <Link href="/employee/public-profile">
+                  <Button variant="outline" className="w-full">
+                    View Public Profile
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
@@ -345,7 +353,7 @@ export default async function EmployeePortal() {
               <CardHeader>
                 <CardTitle>Recent Repositories</CardTitle>
                 <CardDescription>
-                  {repositories.length > 0 ? 'Your active GitHub repositories' : 'No repositories synced yet'}
+                  {repositories.length > 0 ? `${totalCommitCount} commits across ${repositoryCount} repositories` : 'No repositories synced yet'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -353,7 +361,7 @@ export default async function EmployeePortal() {
                   <div className="space-y-3">
                     {repositories.map((repo) => {
                       return (
-                        <div key={repo.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div key={repo.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
@@ -378,7 +386,8 @@ export default async function EmployeePortal() {
                                 <Star className="w-3 h-3" />
                                 {repo.stars}
                               </div>
-                              <p className="text-xs text-gray-600 mt-1 font-medium">
+                              <p className="text-xs text-purple-600 mt-1 font-bold">
+                                <GitCommitHorizontal className="inline w-3 h-3 mr-1" />
                                 {repo._count.commits} commits
                               </p>
                               {repo.pushedAt && (

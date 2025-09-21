@@ -43,7 +43,12 @@ export default async function RepositoriesPage() {
     where: { employeeId: userInfo.employee.id }
   })
 
-  const totalCommits = repositories.reduce((sum, repo) => sum + repo._count.commits, 0)
+  // Get total commit count from database
+  const totalCommits = await db.commit.count({
+    where: {
+      repository: { employeeId: userInfo.employee.id }
+    }
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">

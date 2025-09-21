@@ -262,12 +262,14 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-2xl font-bold text-blue-600">{syncData.repositories || 0}</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {syncData.totalRepos || syncData.repositories || 0}
+                  </div>
                   <div className="text-xs text-gray-600">Repositories</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="text-2xl font-bold text-green-600">
-                    {syncData.skillCount || 0}
+                    {syncData.skillCount || syncData.totalSkills || 0}
                   </div>
                   <div className="text-xs text-gray-600">Skills</div>
                 </div>

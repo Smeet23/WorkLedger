@@ -120,6 +120,11 @@ model Employee {
   title           String?
   department      String?
 
+  // Profile fields
+  bio             String?       @db.Text
+  linkedinUrl     String?
+  personalWebsite String?
+
   // Company Relationship
   companyId       String
   company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
