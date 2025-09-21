@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         skillRecords: {
           include: { skill: true }
         },
-        gitHubConnection: true
+        githubConnection: true
       }
     })
 
@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
       department: employee.department,
       bio: employee.bio,
       linkedinUrl: employee.linkedinUrl,
-      githubUrl: employee.gitHubConnection?.githubUsername
-        ? `https://github.com/${employee.gitHubConnection.githubUsername}`
+      githubUrl: employee.githubConnection?.githubUsername
+        ? `https://github.com/${employee.githubConnection.githubUsername}`
         : '',
       personalWebsite: employee.personalWebsite,
       role: employee.role,

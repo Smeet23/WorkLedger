@@ -120,7 +120,7 @@ export default async function PublicProfilePage() {
                   {employee.firstName} {employee.lastName}
                 </h2>
                 <p className="text-gray-600">{employee.title || employee.role}</p>
-                <p className="text-sm text-gray-500">{company.name}</p>
+                <p className="text-sm text-gray-500">{company?.name}</p>
 
                 <div className="flex items-center gap-4 mt-3">
                   {githubConnection?.githubUsername && (

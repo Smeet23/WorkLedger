@@ -192,9 +192,9 @@ export default async function SkillProgressPage() {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h4 className="font-medium capitalize">{record.skill.name}</h4>
-                        {record.yearsOfExperience && (
+                        {record.lastUsed && (
                           <p className="text-xs text-gray-500 mt-1">
-                            {record.yearsOfExperience} years experience
+                            Last used: {new Date(record.lastUsed).toLocaleDateString()}
                           </p>
                         )}
                       </div>

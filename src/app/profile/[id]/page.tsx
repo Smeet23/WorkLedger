@@ -34,7 +34,7 @@ export default async function PublicProfileViewPage({ params }: ProfilePageProps
         orderBy: { stars: 'desc' },
         take: 6
       },
-      gitHubConnection: true,
+      githubConnection: true,
       _count: {
         select: {
           repositories: true,
@@ -108,9 +108,9 @@ export default async function PublicProfileViewPage({ params }: ProfilePageProps
 
                 {/* Social Links */}
                 <div className="flex items-center gap-4 mt-4">
-                  {employee.gitHubConnection?.githubUsername && (
+                  {employee.githubConnection?.githubUsername && (
                     <a
-                      href={`https://github.com/${employee.gitHubConnection.githubUsername}`}
+                      href={`https://github.com/${employee.githubConnection.githubUsername}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"

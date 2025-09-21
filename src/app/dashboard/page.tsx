@@ -133,8 +133,10 @@ export default async function CompanyDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  View Analytics
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/company">
+                    View Analytics
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
