@@ -73,6 +73,11 @@ model Company {
   integrations Integration[]
   auditLogs   AuditLog[]
   invitations Invitation[]
+  githubInstallations GitHubInstallation[]
+  githubOrganizationMembers GitHubOrganizationMember[]
+  githubIntegrations GitHubIntegration[]
+  githubWebhooks GitHubWebhook[]
+  githubTokenAudits GitHubTokenAudit[]
 
   // Metadata
   createdAt   DateTime         @default(now())
@@ -139,6 +144,10 @@ model Employee {
   githubId        String?
   salesforceId    String?
 
+  // Auto-discovery fields
+  autoDiscovered  Boolean       @default(false)
+  discoveryConfidence Float?    // 0.0 to 1.0
+
   // Relationships
   certificates    Certificate[]
   skillRecords    SkillRecord[]
@@ -146,6 +155,8 @@ model Employee {
   githubConnection GitHubConnection?
   repositories    Repository[]
   skillEvolutions SkillEvolution[]
+  githubOrganizationMembers GitHubOrganizationMember[]
+  githubTokenAudits GitHubTokenAudit[]
 
   // Metadata
   createdAt       DateTime      @default(now())
@@ -628,6 +639,147 @@ model Commit {
   @@index([repositoryId, authorDate])
   @@index([authorEmail])
   @@map("commits")
+}
+
+// GitHub App Installation tracking
+model GitHubInstallation {
+  id              String   @id @default(cuid())
+  installationId  BigInt   @unique
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // GitHub organization details
+  accountLogin    String   // Organization username
+  accountId       BigInt
+  accountType     String   @default("Organization")
+
+  // Installation permissions and events
+  permissions     Json     @default("{}")
+  events          String[]
+
+  // Repository access
+  repositorySelection String @default("all") // 'all' or 'selected'
+  selectedRepositories Json  @default("[]")
+
+  // Status
+  isActive        Boolean  @default(true)
+  installedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  suspendedAt     DateTime?
+
+  @@map("github_installations")
+}
+
+// GitHub Organization Members cache
+model GitHubOrganizationMember {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  githubUserId    BigInt
+  githubUsername  String
+  githubEmail     String?
+  githubName      String?
+
+  // Employment verification
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id])
+  matchConfidence Float?    // 0.0 to 1.0
+  matchMethod     String?   // 'email', 'name', 'manual', 'commit_analysis'
+
+  // Organization role
+  orgRole         String?   // 'member', 'admin', 'owner'
+  orgPermissions  Json?
+
+  // Status
+  isActive        Boolean   @default(true)
+  discoveredAt    DateTime  @default(now())
+  lastActivityAt  DateTime?
+
+  @@unique([companyId, githubUserId])
+  @@map("github_organization_members")
+}
+
+// GitHub Integration for company-level tokens
+model GitHubIntegration {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tokenType       String   // 'oauth_access', 'app_installation', 'organization'
+
+  // Encrypted token storage
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+
+  // Token metadata
+  expiresAt       DateTime?
+  scope           String?
+  organizationLogin String? // GitHub org username
+  installationId  BigInt?   // For GitHub Apps
+
+  // Additional data
+  metadata        Json      @default("{}")
+
+  // Status tracking
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deactivatedAt   DateTime?
+
+  @@unique([companyId, tokenType])
+  @@index([companyId, isActive])
+  @@index([installationId])
+  @@map("github_integrations")
+}
+
+// Webhook tracking
+model GitHubWebhook {
+  id              String    @id @default(cuid())
+  installationId  BigInt?
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Webhook details
+  eventType       String
+  action          String?
+  payload         Json
+
+  // Processing status
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  errorMessage    String?
+  retryCount      Int       @default(0)
+
+  // Metadata
+  receivedAt      DateTime  @default(now())
+  githubDeliveryId String?
+
+  @@index([processed, receivedAt])
+  @@index([companyId, eventType, receivedAt])
+  @@map("github_webhooks")
+}
+
+// Audit trail for token operations
+model GitHubTokenAudit {
+  id              String    @id @default(cuid())
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // Operation details
+  operation       String    // 'created', 'refreshed', 'revoked', 'expired'
+  tokenType       String
+
+  // Context
+  userAgent       String?
+  ipAddress       String?
+  userId          String?   // Who performed the operation
+
+  // Metadata
+  metadata        Json      @default("{}")
+  createdAt       DateTime  @default(now())
+
+  @@map("github_token_audit")
 }
 
 // Indexes for Performance

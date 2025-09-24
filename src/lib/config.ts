@@ -131,7 +131,19 @@ export const skillConfig = {
 
 // GitHub Integration Configuration
 export const githubConfig = {
+  // GitHub App configuration (for organizations)
+  app: {
+    id: process.env.GITHUB_APP_ID || undefined,
+    privateKey: process.env.GITHUB_APP_PRIVATE_KEY || undefined,
+    clientId: process.env.GITHUB_APP_CLIENT_ID || undefined,
+    clientSecret: process.env.GITHUB_APP_CLIENT_SECRET || undefined,
+    webhookSecret: process.env.GITHUB_WEBHOOK_SECRET || undefined,
+  },
+
+  // OAuth configuration (for individual employees)
   oauth: {
+    clientId: process.env.GITHUB_CLIENT_ID || '',
+    clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
     scope: 'repo user:email read:org',
     redirectPath: '/api/github/callback',
   },
@@ -146,8 +158,20 @@ export const githubConfig = {
   },
 
   rateLimit: {
-    requestsPerHour: 5000,
+    // GitHub App gets higher rate limits
+    appRequestsPerHour: 15000,
+    oauthRequestsPerHour: 5000,
     searchRequestsPerHour: 30,
+  },
+
+  // Token management
+  tokens: {
+    // App installation tokens expire after 1 hour
+    appTokenTtl: 60 * 60 * 1000, // 1 hour in ms
+    // OAuth tokens can be long-lived or have refresh tokens
+    oauthTokenTtl: 365 * 24 * 60 * 60 * 1000, // 1 year in ms
+    // Refresh tokens before they expire
+    refreshThreshold: 5 * 60 * 1000, // 5 minutes in ms
   },
 } as const
 
