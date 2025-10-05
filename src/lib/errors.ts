@@ -151,8 +151,6 @@ export class ExternalServiceError extends AppError {
 }
 
 export class GitHubAPIError extends ExternalServiceError {
-  readonly code = 'GITHUB_API_ERROR'
-
   constructor(
     message: string,
     public readonly status?: number,
@@ -192,23 +190,18 @@ export class BusinessLogicError extends AppError {
 }
 
 export class InvitationError extends BusinessLogicError {
-  readonly code = 'INVITATION_ERROR'
-
   constructor(message: string, context?: Record<string, unknown>) {
     super(message, context)
   }
 }
 
 export class CertificateGenerationError extends BusinessLogicError {
-  readonly code = 'CERTIFICATE_GENERATION_ERROR'
-
   constructor(message: string, context?: Record<string, unknown>) {
     super(message, context)
   }
 }
 
 export class SkillDetectionError extends BusinessLogicError {
-  readonly code = 'SKILL_DETECTION_ERROR'
 
   constructor(message: string, context?: Record<string, unknown>) {
     super(message, context)

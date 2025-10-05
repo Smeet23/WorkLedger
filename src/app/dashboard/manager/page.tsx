@@ -167,34 +167,7 @@ export default async function ManagerDashboard() {
   const analytics = await getTeamAnalytics(company.id)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">Team Command Center</h1>
-              <Badge className="ml-3" variant="secondary">
-                <Eye className="w-3 h-3 mr-1" />
-                Real-time
-              </Badge>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600">
-                Last updated: {format(new Date(), 'HH:mm:ss')}
-              </span>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/dashboard">
-                  Back to Dashboard
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="container mx-auto p-8 space-y-8 animate-fade-in">
         {/* Critical Alerts */}
         {analytics.needsAttention.length > 0 && (
           <Alert className="mb-6 border-red-200 bg-red-50">
@@ -614,7 +587,6 @@ export default async function ManagerDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
   )
 }

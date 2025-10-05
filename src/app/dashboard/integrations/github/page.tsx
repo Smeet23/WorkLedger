@@ -74,73 +74,113 @@ export default function GitHubIntegrationPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/20">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full blur-xl opacity-50 animate-pulse" />
+            <Loader2 className="relative h-12 w-12 animate-spin text-blue-600" />
+          </div>
+          <p className="text-sm font-semibold text-slate-600">Loading integration...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Github className="h-8 w-8" />
-          GitHub Integration
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Connect your GitHub organization to automatically track employee skills
-        </p>
-      </div>
+    <div className="container mx-auto p-8 space-y-8 animate-fade-in">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-600 animate-pulse" />
+            <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
+              Integrations
+            </span>
+          </div>
+          <h1 className="text-[2.75rem] font-bold tracking-tight text-slate-900 leading-[1.1] flex items-center gap-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-600 to-slate-800 rounded-2xl blur-lg opacity-50" />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 shadow-lg shadow-slate-500/30">
+                <Github className="h-7 w-7 text-white" />
+              </div>
+            </div>
+            GitHub Integration
+          </h1>
+          <p className="text-lg text-slate-600 leading-relaxed">
+            Connect your GitHub organization to automatically track employee skills
+          </p>
+        </div>
 
       {!installation ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Connect GitHub Organization</CardTitle>
-            <CardDescription>
-              Install the WorkLedger GitHub App to start automatic skill detection
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">What happens when you connect:</h3>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  Automatically discover all organization members
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  Track programming languages and frameworks used
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  Generate skill profiles from code contributions
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  Privacy-first: Only approved data is shared
-                </li>
-              </ul>
-            </div>
+        <div className="group relative max-w-3xl mx-auto">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-slate-500/20 to-slate-700/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200/50 border border-slate-200/50">
+                  <Github className="h-6 w-6 text-slate-700" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold text-slate-900">Connect GitHub Organization</CardTitle>
+                  <CardDescription className="text-slate-600 mt-1">
+                    Install the WorkLedger GitHub App to start automatic skill detection
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-2xl blur" />
+                <div className="relative bg-gradient-to-br from-blue-50/80 via-white to-cyan-50/50 p-6 rounded-2xl border border-blue-200/50 backdrop-blur-sm">
+                  <h3 className="font-bold text-slate-900 mb-4 text-lg">What happens when you connect:</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-center gap-3">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 border border-emerald-200/50">
+                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700">Automatically discover all organization members</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 border border-emerald-200/50">
+                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700">Track programming languages and frameworks used</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 border border-emerald-200/50">
+                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700">Generate skill profiles from code contributions</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 border border-emerald-200/50">
+                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700">Privacy-first: Only approved data is shared</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
 
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                You'll be redirected to GitHub to authorize the installation.
-                Only organization owners can install GitHub Apps.
-              </AlertDescription>
-            </Alert>
+              <Alert className="border-amber-200/50 bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 backdrop-blur-sm">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 border border-amber-200/50">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                </div>
+                <AlertDescription className="text-slate-700 font-medium">
+                  You'll be redirected to GitHub to authorize the installation.
+                  Only organization owners can install GitHub Apps.
+                </AlertDescription>
+              </Alert>
 
-            <Button
-              onClick={initiateInstallation}
-              size="lg"
-              className="w-full"
-            >
-              <Github className="mr-2 h-5 w-5" />
-              Install GitHub App
-            </Button>
-          </CardContent>
-        </Card>
+              <Button
+                onClick={initiateInstallation}
+                size="lg"
+                className="w-full h-14 text-base font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
+              >
+                <Github className="mr-2 h-5 w-5" />
+                Install GitHub App
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <div className="space-y-6">
           {/* Installation Status Card */}
@@ -150,54 +190,74 @@ export default function GitHubIntegrationPage() {
           />
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Total Employees</p>
-                    <p className="text-2xl font-bold">{stats.totalEmployees}</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="group relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-200/50 group-hover:scale-110 transition-transform duration-300">
+                      <Users className="h-7 w-7 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-600">Total Employees</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-1">{stats.totalEmployees}</p>
+                    </div>
                   </div>
-                  <Users className="h-8 w-8 text-gray-400" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Discovered</p>
-                    <p className="text-2xl font-bold">{stats.discoveredEmployees}</p>
+            <div className="group relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-green-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-200/50 group-hover:scale-110 transition-transform duration-300">
+                      <CheckCircle className="h-7 w-7 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-600">Discovered</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-1">{stats.discoveredEmployees}</p>
+                    </div>
                   </div>
-                  <CheckCircle className="h-8 w-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Repositories</p>
-                    <p className="text-2xl font-bold">{stats.syncedRepositories}</p>
+            <div className="group relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-200/50 group-hover:scale-110 transition-transform duration-300">
+                      <GitBranch className="h-7 w-7 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-600">Repositories</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-1">{stats.syncedRepositories}</p>
+                    </div>
                   </div>
-                  <GitBranch className="h-8 w-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">Skills Detected</p>
-                    <p className="text-2xl font-bold">{stats.detectedSkills}</p>
+            <div className="group relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-200/50 group-hover:scale-110 transition-transform duration-300">
+                      <Code className="h-7 w-7 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-600">Skills Detected</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-1">{stats.detectedSkills}</p>
+                    </div>
                   </div>
-                  <Code className="h-8 w-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Main Content Tabs */}
@@ -210,91 +270,131 @@ export default function GitHubIntegrationPage() {
             </TabsList>
 
             <TabsContent value="matching" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Employee Matching</CardTitle>
-                  <CardDescription>
-                    Match GitHub organization members to company employees
-                  </CardDescription>
-                  <div className="flex justify-end">
-                    <Button onClick={runAutoDiscovery} disabled={loading}>
-                      {loading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Users className="mr-2 h-4 w-4" />
-                      )}
-                      Run Auto-Discovery
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <EmployeeMatchingInterface companyId={installation.companyId} />
-                </CardContent>
-              </Card>
+              <div className="group relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-200/50">
+                          <Users className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl font-bold text-slate-900">Employee Matching</CardTitle>
+                          <CardDescription className="text-slate-600 mt-1">
+                            Match GitHub organization members to company employees
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <Button onClick={runAutoDiscovery} disabled={loading} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg shadow-blue-500/30">
+                        {loading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Users className="mr-2 h-4 w-4" />
+                        )}
+                        Run Auto-Discovery
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <EmployeeMatchingInterface companyId={installation.companyId} />
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="repositories" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Repository Sync Status</CardTitle>
-                  <CardDescription>
-                    Monitor synchronized repositories and their analysis status
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RepositorySyncStatus companyId={installation.companyId} />
-                </CardContent>
-              </Card>
+              <div className="group relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-200/50">
+                        <GitBranch className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-900">Repository Sync Status</CardTitle>
+                        <CardDescription className="text-slate-600 mt-1">
+                          Monitor synchronized repositories and their analysis status
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <RepositorySyncStatus companyId={installation.companyId} />
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="skills" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Skill Detection Progress</CardTitle>
-                  <CardDescription>
-                    Track the progress of skill detection across your organization
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SkillDetectionProgress companyId={installation.companyId} />
-                </CardContent>
-              </Card>
+              <div className="group relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-200/50">
+                        <Code className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-900">Skill Detection Progress</CardTitle>
+                        <CardDescription className="text-slate-600 mt-1">
+                          Track the progress of skill detection across your organization
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <SkillDetectionProgress companyId={installation.companyId} />
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Integration Settings</CardTitle>
-                  <CardDescription>
-                    Configure GitHub integration settings
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Organization</h4>
-                      <p className="text-sm text-gray-500">{installation.accountLogin}</p>
+              <div className="group relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-slate-500/20 to-slate-700/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200/50 border border-slate-200/50">
+                        <Github className="h-5 w-5 text-slate-700" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-900">Integration Settings</CardTitle>
+                        <CardDescription className="text-slate-600 mt-1">
+                          Configure GitHub integration settings
+                        </CardDescription>
+                      </div>
                     </div>
-                    <Badge>{installation.repositorySelection === 'all' ? 'All Repos' : 'Selected Repos'}</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Installation ID</h4>
-                      <p className="text-sm text-gray-500">{installation.installationId}</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border border-slate-200/60 rounded-xl bg-white/60 backdrop-blur-sm">
+                      <div>
+                        <h4 className="font-semibold text-slate-900">Organization</h4>
+                        <p className="text-sm text-slate-600 mt-1 font-medium">{installation.accountLogin}</p>
+                      </div>
+                      <Badge className="bg-blue-100 text-blue-700 border-blue-200">{installation.repositorySelection === 'all' ? 'All Repos' : 'Selected Repos'}</Badge>
                     </div>
-                    <Badge variant={installation.isActive ? 'default' : 'secondary'}>
-                      {installation.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
 
-                  <div className="pt-4 border-t">
-                    <Button variant="destructive" className="w-full">
-                      Disconnect GitHub Integration
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex items-center justify-between p-4 border border-slate-200/60 rounded-xl bg-white/60 backdrop-blur-sm">
+                      <div>
+                        <h4 className="font-semibold text-slate-900">Installation ID</h4>
+                        <p className="text-sm text-slate-600 mt-1 font-medium">{installation.installationId}</p>
+                      </div>
+                      <Badge variant={installation.isActive ? 'default' : 'secondary'}>
+                        {installation.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-200">
+                      <Button variant="destructive" className="w-full h-12 font-semibold">
+                        Disconnect GitHub Integration
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { ArrowLeft, GitBranch, Star, GitFork, Code, Calendar, Eye } from 'lucide-react'
-import { format, formatDistance } from 'date-fns'
+import { GitBranch, Star, GitFork, Code, Calendar, Eye } from 'lucide-react'
+import { formatDistance } from 'date-fns'
 import { FullSyncButton } from "@/components/github/full-sync-button"
 
 export default async function RepositoriesPage() {
@@ -51,33 +51,8 @@ export default async function RepositoriesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Repositories</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {repositories.length} repositories • {totalCommits} total commits
-              </p>
-            </div>
-            <div className="flex gap-3">
-              {githubConnection && (
-                <FullSyncButton />
-              )}
-              <Link href="/employee">
-                <Button variant="outline">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {repositories.length === 0 ? (
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {repositories.length === 0 ? (
           <Card>
             <CardContent className="py-12">
               <div className="text-center">
@@ -89,7 +64,7 @@ export default async function RepositoriesPage() {
                   Connect your GitHub account and sync to see your repositories
                 </p>
                 {!githubConnection && (
-                  <Link href="/employee">
+                  <Link href="/employee/dashboard">
                     <Button>
                       Connect GitHub Account
                     </Button>
@@ -188,7 +163,6 @@ export default async function RepositoriesPage() {
             })}
           </div>
         )}
-      </main>
     </div>
   )
 }

@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
         ? `https://github.com/${employee.githubConnection.githubUsername}`
         : '',
       personalWebsite: employee.personalWebsite,
-      role: employee.role,
+      role: session.user.role, // User role from session (company_admin or user)
+      employeeRole: employee.role, // Employee role (DEVELOPER, MANAGER, etc.)
       startDate: employee.startDate,
       company: {
         name: employee.company.name,

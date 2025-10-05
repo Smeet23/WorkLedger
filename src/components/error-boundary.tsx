@@ -43,11 +43,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     // Log the error
     logError(error, {
-      operation: 'react_error_boundary',
-      errorBoundaryLevel: this.props.level || 'component',
-      errorId,
-      componentStack: errorInfo.componentStack,
-      errorStack: error.stack,
+      operation: 'react_error_boundary'
     })
 
     // Update state with error info
@@ -267,8 +263,7 @@ function ComponentErrorFallback({
 export function useErrorHandler() {
   return (error: Error, errorInfo?: { componentStack?: string }) => {
     logError(error, {
-      operation: 'async_component_error',
-      componentStack: errorInfo?.componentStack,
+      operation: 'async_component_error'
     })
 
     // TODO: Report to external error tracking service

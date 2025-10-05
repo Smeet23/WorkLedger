@@ -34,12 +34,12 @@ export default function GitLabIntegrationPage() {
         text: errorText,
       })
       // Clear URL parameters
-      window.location.search = new URLSearchParams(window.location.pathname)
+      window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
+    <div className="container mx-auto p-8 space-y-8 animate-fade-in max-w-4xl">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">

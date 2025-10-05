@@ -17,37 +17,7 @@ export default async function BulkImportPage() {
   const { company } = userInfo
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/dashboard" className="text-3xl font-bold text-gray-900 hover:text-blue-600">
-                WorkLedger
-              </Link>
-              <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                Bulk Import
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                {session.user.firstName} {session.user.lastName}
-              </span>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/dashboard/employees">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Employees
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+    <div className="container mx-auto p-8 space-y-8 animate-fade-in max-w-4xl">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Bulk Employee Import</h1>
             <p className="mt-2 text-gray-600">
@@ -193,8 +163,6 @@ export default async function BulkImportPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </main>
-    </div>
+      </div>
   )
 }

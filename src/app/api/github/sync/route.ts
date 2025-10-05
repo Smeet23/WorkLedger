@@ -82,7 +82,11 @@ async function syncOrganizationData(companyId: string, logger: any) {
   // Get final statistics
   const [totalEmployees, totalRepositories, totalSkills] = await Promise.all([
     db.employee.count({ where: { companyId } }),
-    db.repository.count({ where: { companyId } }),
+    db.repository.count({
+      where: {
+        employee: { companyId }
+      }
+    }),
     db.skillRecord.count({
       where: {
         employee: { companyId }
@@ -113,7 +117,7 @@ async function syncOrganizationData(companyId: string, logger: any) {
 async function syncEmployeeContributions(employeeId: string, logger: any) {
   const employee = await db.employee.findUnique({
     where: { id: employeeId },
-    include: { gitHubConnection: true }
+    include: { githubConnection: true }
   })
 
   if (!employee) {
@@ -139,11 +143,6 @@ async function syncEmployeeContributions(employeeId: string, logger: any) {
 
   // Match employee contributions to organization repositories
   const matchResult = await enhancedGitHubService.matchEmployeeContributions(employeeId)
-
-  // Re-generate skills based on updated contribution data
-  if (employee.githubUsername) {
-    await discoveryService.generateEmployeeSkillsFromOrgData(employeeId, employee.githubUsername)
-  }
 
   // Get updated skill count
   const skillCount = await db.skillRecord.count({

@@ -116,7 +116,7 @@ export class ApiResponseBuilder {
 
   // Specific error types
   badRequest(message = 'Bad request', details?: unknown): NextResponse<ApiErrorResponse> {
-    return this.error(new AppError(message, details) as any)
+    return this.error(new ValidationError(message))
   }
 
   unauthorized(message = 'Unauthorized'): NextResponse<ApiErrorResponse> {

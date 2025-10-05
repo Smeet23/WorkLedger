@@ -11,8 +11,13 @@ const logger = loggers.external('github_webhooks')
 
 // Verify GitHub webhook signature
 function verifyWebhookSignature(payload: string, signature: string): boolean {
+  const webhookSecret = config.github.app.webhookSecret
+  if (!webhookSecret) {
+    throw new Error('GitHub webhook secret is not configured')
+  }
+
   const expectedSignature = crypto
-    .createHmac('sha256', config.github.app.webhookSecret)
+    .createHmac('sha256', webhookSecret)
     .update(payload)
     .digest('hex')
 
@@ -249,16 +254,14 @@ async function handleInstallationRepositoriesEvent(payload: any): Promise<void> 
   }
 
   if (action === 'removed' && repositories_removed) {
-    // Mark removed repositories as inaccessible
+    // Delete removed repositories
     for (const repo of repositories_removed) {
-      await db.repository.updateMany({
+      await db.repository.deleteMany({
         where: {
           githubRepoId: String(repo.id),
-          companyId
-        },
-        data: {
-          isAccessible: false,
-          updatedAt: new Date()
+          employee: {
+            companyId
+          }
         }
       })
     }
@@ -281,7 +284,9 @@ async function handlePushEvent(payload: any): Promise<void> {
   await db.repository.updateMany({
     where: {
       githubRepoId: String(repository.id),
-      companyId
+      employee: {
+        companyId
+      }
     },
     data: {
       lastActivityAt: new Date(),
@@ -378,68 +383,32 @@ async function handleRepositoryEvent(payload: any): Promise<void> {
       break
 
     case 'deleted':
-      await db.repository.updateMany({
+      await db.repository.deleteMany({
         where: {
           githubRepoId: String(repository.id),
-          companyId
-        },
-        data: {
-          isAccessible: false,
-          updatedAt: new Date()
+          employee: {
+            companyId
+          }
         }
       })
       break
 
     case 'archived':
-      await db.repository.updateMany({
-        where: {
-          githubRepoId: String(repository.id),
-          companyId
-        },
-        data: {
-          isArchived: true,
-          updatedAt: new Date()
-        }
+      // For archived repos, we can keep them but just log it
+      logger.info('Repository archived', {
+        repositoryId: repository.id,
+        name: repository.name
       })
       break
   }
 }
 
 async function syncRepositoryData(companyId: string, repoData: any): Promise<void> {
-  try {
-    await db.repository.upsert({
-      where: { githubRepoId: String(repoData.id) },
-      update: {
-        name: repoData.name,
-        fullName: repoData.full_name,
-        description: repoData.description,
-        isPrivate: repoData.private,
-        defaultBranch: repoData.default_branch,
-        lastActivityAt: new Date(),
-        updatedAt: new Date()
-      },
-      create: {
-        githubRepoId: String(repoData.id),
-        companyId,
-        name: repoData.name,
-        fullName: repoData.full_name,
-        description: repoData.description,
-        isPrivate: repoData.private,
-        defaultBranch: repoData.default_branch,
-        isOrganizationRepo: true,
-        lastActivityAt: new Date()
-      }
-    })
-
-    logger.info('Repository synced', {
-      repository: repoData.full_name,
-      companyId
-    })
-
-  } catch (error) {
-    logger.error('Failed to sync repository', error, {
-      repository: repoData.full_name,
-      companyId
-    })
-  }
+  // TODO: Implement repository syncing logic
+  // Repositories belong to employees, not companies directly
+  // This needs to find or create an employee association first
+  logger.info('Repository sync requested', {
+    repository: repoData.full_name,
+    companyId
+  })
 }

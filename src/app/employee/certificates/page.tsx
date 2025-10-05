@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { db } from "@/lib/db"
-import { Trophy, Download, Calendar, ArrowLeft, Eye, Plus } from 'lucide-react'
+import { Trophy, Download, Calendar, Eye, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default async function CertificatesPage() {
@@ -36,33 +36,17 @@ export default async function CertificatesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <h1 className="text-3xl font-bold text-gray-900">My Certificates</h1>
-            </div>
-            <div className="flex gap-3">
-              <Link href="/employee/certificates/generate">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Generate New
-                </Button>
-              </Link>
-              <Link href="/employee">
-                <Button variant="outline">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </div>
-          </div>
+    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="px-4 py-6 sm:px-0">
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3 mb-6">
+          <Link href="/employee/certificates/generate">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Generate New
+            </Button>
+          </Link>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
           {certificates.length === 0 ? (
             <Card>
               <CardContent className="py-12">
@@ -174,8 +158,7 @@ export default async function CertificatesPage() {
               })}
             </div>
           )}
-        </div>
-      </main>
+      </div>
     </div>
   )
 }

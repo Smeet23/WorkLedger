@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditProfilePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [userRole, setUserRole] = useState<'company_admin' | 'employee'>('employee')
   const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
@@ -38,6 +39,10 @@ export default function EditProfilePage() {
       const response = await fetch('/api/employee/profile')
       if (response.ok) {
         const data = await response.json()
+        // Set user role from the response
+        if (data.role) {
+          setUserRole(data.role)
+        }
         setProfile({
           firstName: data.firstName || '',
           lastName: data.lastName || '',
@@ -72,7 +77,7 @@ export default function EditProfilePage() {
       })
 
       if (response.ok) {
-        router.push('/employee')
+        router.push('/employee/dashboard')
       } else {
         alert('Failed to update profile. Please try again.')
       }
@@ -93,35 +98,15 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Update your professional information
-              </p>
-            </div>
-            <Link href="/employee">
-              <Button variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Cancel
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <form onSubmit={handleSubmit}>
+    <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <form onSubmit={handleSubmit}>
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
@@ -250,7 +235,7 @@ export default function EditProfilePage() {
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Link href="/employee">
+            <Link href={userRole === 'company_admin' ? '/dashboard' : '/employee/dashboard'}>
               <Button type="button" variant="outline">
                 Cancel
               </Button>
@@ -270,7 +255,6 @@ export default function EditProfilePage() {
             </Button>
           </div>
         </form>
-      </main>
     </div>
   )
 }
