@@ -4,6 +4,8 @@ import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { GitHubIntegrationWrapper } from "@/components/github/github-integration-wrapper"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Activity, Users, Eye, Zap, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
 export default async function CompanyDashboard() {
@@ -104,6 +106,37 @@ export default async function CompanyDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Manager Command Center Alert */}
+          <Alert className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <Activity className="h-5 w-5" />
+            <AlertTitle className="text-lg font-semibold">Team Command Center Available!</AlertTitle>
+            <AlertDescription>
+              <p className="mb-3">
+                Get real-time insights into your team's productivity and performance across all platforms.
+              </p>
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="flex items-center">
+                  <Eye className="w-4 h-4 text-blue-600 mr-2" />
+                  <span className="text-sm">Live Activity Tracking</span>
+                </div>
+                <div className="flex items-center">
+                  <Zap className="w-4 h-4 text-blue-600 mr-2" />
+                  <span className="text-sm">Performance Metrics</span>
+                </div>
+                <div className="flex items-center">
+                  <Users className="w-4 h-4 text-blue-600 mr-2" />
+                  <span className="text-sm">Team Analytics</span>
+                </div>
+              </div>
+              <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                <Link href="/dashboard/manager">
+                  Open Command Center
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

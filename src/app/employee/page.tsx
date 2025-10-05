@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { GitHubIntegrationWrapper } from "@/components/github/github-integration-wrapper"
 import Link from "next/link"
 import { db } from "@/lib/db"
-import { Trophy, Code, GitBranch, Star, Award, Download, GitCommitHorizontal, Activity } from 'lucide-react'
+import { Trophy, Code, GitBranch, Star, Award, Download, GitCommitHorizontal, Activity, Github, AlertCircle, CheckCircle, Sparkles } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { format, formatDistance } from 'date-fns'
 
 export default async function EmployeePortal() {
@@ -139,6 +140,69 @@ export default async function EmployeePortal() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
 
+          {/* GitHub Connection Alert */}
+          {!githubConnection && (
+            <Alert className="mb-6 border-blue-200 bg-blue-50">
+              <Github className="h-5 w-5" />
+              <AlertTitle className="text-lg font-semibold">Connect Your GitHub Account</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p className="mb-3">
+                  Unlock automatic skill tracking by connecting your GitHub account. WorkLedger will analyze your contributions to generate verified skill certificates.
+                </p>
+                <div className="flex items-start space-x-6 mb-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                    <span className="text-sm">Automatic skill detection</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                    <span className="text-sm">Track all contributions</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                    <span className="text-sm">Generate certificates</span>
+                  </div>
+                </div>
+                <Button
+                  className="bg-black hover:bg-gray-800"
+                  onClick={() => window.location.href = '/api/github/connect'}
+                >
+                  <Github className="w-4 h-4 mr-2" />
+                  Connect GitHub Now
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* GitHub Connected Status */}
+          {githubConnection && githubConnection.isActive && (
+            <Alert className="mb-6 border-green-200 bg-green-50">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <AlertTitle className="text-lg font-semibold">GitHub Connected</AlertTitle>
+              <AlertDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm">
+                      Connected as <span className="font-mono font-semibold">@{githubConnection.githubUsername}</span>
+                    </p>
+                    {githubConnection.lastSync && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Last synced: {formatDistance(new Date(githubConnection.lastSync), new Date(), { addSuffix: true })}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = '/dashboard/integrations/github'}
+                  >
+                    Manage Connection
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Welcome Section with Real Stats */}
           <div className="mb-8">
             <Card>
@@ -223,7 +287,61 @@ export default async function EmployeePortal() {
               </CardContent>
             </Card>
 
-            <GitHubIntegrationWrapper />
+            {/* GitHub Integration Card - Modified */}
+            {githubConnection ? (
+              <Card className="border-green-200">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Github className="w-5 h-5" />
+                    GitHub Connected
+                  </CardTitle>
+                  <CardDescription>
+                    Syncing {repositoryCount} repositories
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Total Commits:</span>
+                      <span className="font-semibold">{totalCommitCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Skills Detected:</span>
+                      <span className="font-semibold">{skillCount}</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/dashboard/integrations/github">
+                      Manage GitHub Settings
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-yellow-200 bg-yellow-50">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-yellow-600" />
+                    GitHub Not Connected
+                  </CardTitle>
+                  <CardDescription>
+                    Connect to track your contributions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Connect your GitHub account to automatically track skills from your code contributions.
+                  </p>
+                  <Button
+                    className="w-full bg-black hover:bg-gray-800"
+                    onClick={() => window.location.href = '/api/github/connect'}
+                  >
+                    <Github className="w-4 h-4 mr-2" />
+                    Connect GitHub
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             {/* My Repositories */}
             <Card>

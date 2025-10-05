@@ -22,6 +22,11 @@ const envSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1),
   GITHUB_CLIENT_SECRET: z.string().min(1),
 
+  // GitLab Integration (optional)
+  GITLAB_CLIENT_ID: z.string().optional(),
+  GITLAB_CLIENT_SECRET: z.string().optional(),
+  GITLAB_REDIRECT_URI: z.string().optional(),
+
   // Email (optional)
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),
@@ -172,6 +177,37 @@ export const githubConfig = {
     oauthTokenTtl: 365 * 24 * 60 * 60 * 1000, // 1 year in ms
     // Refresh tokens before they expire
     refreshThreshold: 5 * 60 * 1000, // 5 minutes in ms
+  },
+} as const
+
+// GitLab Integration Configuration
+export const gitlabConfig = {
+  oauth: {
+    clientId: process.env.GITLAB_CLIENT_ID || '',
+    clientSecret: process.env.GITLAB_CLIENT_SECRET || '',
+    scope: 'read_user read_api read_repository',
+    redirectPath: '/api/gitlab/callback',
+  },
+
+  api: {
+    baseUrl: 'https://gitlab.com/api/v4',
+    oauthUrl: 'https://gitlab.com/oauth',
+    perPage: 100,
+    maxReposQuickSync: 30,
+    maxCommitsPerRepo: 100,
+    syncPeriodMonths: 6,
+  },
+
+  rateLimit: {
+    requestsPerMinute: 600,
+    burstLimit: 1000,
+  },
+
+  tokens: {
+    // OAuth access tokens from GitLab don't expire by default
+    // But refresh tokens can be used for security
+    oauthTokenTtl: 365 * 24 * 60 * 60 * 1000, // 1 year in ms
+    refreshThreshold: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
   },
 } as const
 
@@ -339,6 +375,7 @@ export const config = {
   env,
   skill: skillConfig,
   github: githubConfig,
+  gitlab: gitlabConfig,
   certificate: certificateConfig,
   pagination: paginationConfig,
   ui: uiConfig,

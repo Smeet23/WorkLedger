@@ -14,6 +14,8 @@ export enum JobType {
   GITHUB_SYNC_ORGANIZATION = 'github:sync:organization',
   GITHUB_SYNC_EMPLOYEE = 'github:sync:employee',
   GITHUB_AUTO_DISCOVERY = 'github:auto:discovery',
+  GITLAB_SYNC_EMPLOYEE = 'gitlab:sync:employee',
+  GITLAB_SKILL_DETECTION = 'gitlab:skill:detection',
   SKILL_DETECTION = 'skill:detection',
   CERTIFICATE_GENERATION = 'certificate:generation',
   EMAIL_SEND = 'email:send',
@@ -42,6 +44,17 @@ export interface SkillDetectionJob {
   employeeId: string
   githubUsername: string
   repositories?: string[]
+}
+
+export interface GitLabSyncEmployeeJob {
+  employeeId: string
+  projects?: string[]
+}
+
+export interface GitLabSkillDetectionJob {
+  employeeId: string
+  gitlabUsername: string
+  projects?: string[]
 }
 
 export interface CertificateGenerationJob {
@@ -91,6 +104,7 @@ const queueConfig = {
 
 // Create queues
 export const githubQueue = new Queue('github-operations', queueConfig)
+export const gitlabQueue = new Queue('gitlab-operations', queueConfig)
 export const skillQueue = new Queue('skill-operations', queueConfig)
 export const emailQueue = new Queue('email-operations', queueConfig)
 export const certificateQueue = new Queue('certificate-operations', queueConfig)
@@ -213,6 +227,89 @@ class JobProcessor {
 
     } catch (error) {
       jobLogger.error('Skill detection failed', error)
+      throw error
+    }
+  }
+
+  async processGitLabSyncEmployee(job: Queue.Job<GitLabSyncEmployeeJob>) {
+    const { employeeId, projects } = job.data
+    const jobLogger = this.logger.withEmployee(employeeId)
+
+    try {
+      jobLogger.info('Processing GitLab employee sync', { projectCount: projects?.length })
+
+      const { GitLabService } = await import('@/services/gitlab/client')
+      const { GitLabSkillDetector } = await import('@/services/gitlab/skill-detector')
+
+      // Get employee's GitLab connection
+      const connection = await GitLabService.getConnection(employeeId)
+
+      if (!connection || !connection.accessToken) {
+        throw new Error('No GitLab connection found for employee')
+      }
+
+      // Detect skills from projects
+      const detector = new GitLabSkillDetector(connection.accessToken)
+      const skills = await detector.detectSkillsFromProjects(employeeId)
+
+      // Save detected skills
+      await detector.saveSkills(employeeId, skills)
+
+      // Update last sync time
+      const { db } = await import('@/lib/db')
+      await db.integration.update({
+        where: { id: connection.id },
+        data: { lastSync: new Date() },
+      })
+
+      jobLogger.info('GitLab employee sync completed', {
+        skillsDetected: skills.length,
+      })
+
+      return {
+        success: true,
+        skills: skills.length,
+      }
+    } catch (error) {
+      jobLogger.error('GitLab employee sync failed', error)
+      throw error
+    }
+  }
+
+  async processGitLabSkillDetection(job: Queue.Job<GitLabSkillDetectionJob>) {
+    const { employeeId, gitlabUsername, projects } = job.data
+    const jobLogger = this.logger.withEmployee(employeeId)
+
+    try {
+      jobLogger.info('Processing GitLab skill detection', { gitlabUsername, projectCount: projects?.length })
+
+      const { GitLabService } = await import('@/services/gitlab/client')
+      const { GitLabSkillDetector } = await import('@/services/gitlab/skill-detector')
+
+      // Get employee's GitLab connection
+      const connection = await GitLabService.getConnection(employeeId)
+
+      if (!connection || !connection.accessToken) {
+        throw new Error('No GitLab connection found for employee')
+      }
+
+      // Detect skills
+      const detector = new GitLabSkillDetector(connection.accessToken)
+      const skills = await detector.detectSkillsFromProjects(employeeId)
+
+      // Save skills
+      await detector.saveSkills(employeeId, skills)
+
+      jobLogger.info('GitLab skill detection completed', {
+        skillsDetected: skills.length,
+      })
+
+      return {
+        success: true,
+        skills: skills.length,
+      }
+    } catch (error) {
+      jobLogger.error('GitLab skill detection failed', error)
       throw error
     }
   }
@@ -381,6 +478,9 @@ githubQueue.process(JobType.GITHUB_SYNC_ORGANIZATION, 2, processor.processGitHub
 githubQueue.process(JobType.GITHUB_SYNC_EMPLOYEE, 5, processor.processGitHubSyncEmployee.bind(processor))
 githubQueue.process(JobType.GITHUB_AUTO_DISCOVERY, 1, processor.processGitHubSyncOrganization.bind(processor))
 
+gitlabQueue.process(JobType.GITLAB_SYNC_EMPLOYEE, 5, processor.processGitLabSyncEmployee.bind(processor))
+gitlabQueue.process(JobType.GITLAB_SKILL_DETECTION, 3, processor.processGitLabSkillDetection.bind(processor))
+
 skillQueue.process(JobType.SKILL_DETECTION, 3, processor.processSkillDetection.bind(processor))
 
 certificateQueue.process(JobType.CERTIFICATE_GENERATION, 2, processor.processCertificateGeneration.bind(processor))
@@ -419,6 +519,37 @@ export class JobManager {
     })
 
     this.logger.info('Queued GitHub employee sync', {
+      jobId: job.id,
+      employeeId: data.employeeId
+    })
+
+    return job.id
+  }
+
+  // GitLab operations
+  async queueGitLabEmployeeSync(data: GitLabSyncEmployeeJob, options?: Queue.JobOptions) {
+    const job = await gitlabQueue.add(JobType.GITLAB_SYNC_EMPLOYEE, data, {
+      ...options,
+      delay: options?.delay || 0,
+      priority: options?.priority || 3
+    })
+
+    this.logger.info('Queued GitLab employee sync', {
+      jobId: job.id,
+      employeeId: data.employeeId
+    })
+
+    return job.id
+  }
+
+  async queueGitLabSkillDetection(data: GitLabSkillDetectionJob, options?: Queue.JobOptions) {
+    const job = await gitlabQueue.add(JobType.GITLAB_SKILL_DETECTION, data, {
+      ...options,
+      delay: options?.delay || 0,
+      priority: options?.priority || 2
+    })
+
+    this.logger.info('Queued GitLab skill detection', {
       jobId: job.id,
       employeeId: data.employeeId
     })
@@ -497,6 +628,7 @@ export class JobManager {
   async getQueueStats() {
     const stats = {
       github: await githubQueue.getJobCounts(),
+      gitlab: await gitlabQueue.getJobCounts(),
       skills: await skillQueue.getJobCounts(),
       certificates: await certificateQueue.getJobCounts(),
       email: await emailQueue.getJobCounts(),
@@ -507,9 +639,10 @@ export class JobManager {
     return stats
   }
 
-  async getFailedJobs(queue: 'github' | 'skills' | 'certificates' | 'email' | 'webhooks' | 'cleanup') {
+  async getFailedJobs(queue: 'github' | 'gitlab' | 'skills' | 'certificates' | 'email' | 'webhooks' | 'cleanup') {
     const queueMap = {
       github: githubQueue,
+      gitlab: gitlabQueue,
       skills: skillQueue,
       certificates: certificateQueue,
       email: emailQueue,
@@ -535,6 +668,7 @@ process.on('SIGTERM', async () => {
   logger.info('Shutting down job queues...')
   await Promise.all([
     githubQueue.close(),
+    gitlabQueue.close(),
     skillQueue.close(),
     certificateQueue.close(),
     emailQueue.close(),
