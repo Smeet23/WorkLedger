@@ -1,7 +1,7 @@
 import Queue from 'bull'
 import Redis from 'ioredis'
 import { config } from './config'
-import { logger } from './logger'
+import { createLogger } from './logger'
 
 // Redis connection
 const redis = new Redis(config.env.REDIS_URL || 'redis://localhost:6379', {
@@ -113,7 +113,7 @@ export const cleanupQueue = new Queue('cleanup-operations', queueConfig)
 
 // Job processors
 class JobProcessor {
-  private readonly logger = logger.withContext({ service: 'job_processor' })
+  private readonly logger = createLogger({ service: 'job_processor' })
 
   async processGitHubSyncOrganization(job: Queue.Job<GitHubSyncOrganizationJob>) {
     const { companyId, adminId, fullSync = false } = job.data
@@ -493,7 +493,7 @@ cleanupQueue.process(JobType.DATA_CLEANUP, 1, processor.processDataCleanup.bind(
 
 // Job queue management
 export class JobManager {
-  private readonly logger = logger.withContext({ service: 'job_manager' })
+  private readonly logger = createLogger({ service: 'job_manager' })
 
   // GitHub operations
   async queueGitHubOrganizationSync(data: GitHubSyncOrganizationJob, options?: Queue.JobOptions) {

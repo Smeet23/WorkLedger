@@ -51,9 +51,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
     return apiResponse.success(syncResult, 'GitHub sync completed successfully')
 
-  } catch (error) {
+  } catch (error: any) {
     employeeLogger.error('GitHub sync failed', error)
-    throw error
+    console.error('GitHub sync error:', error)
+
+    // Return user-friendly error message
+    return apiResponse.error(
+      error?.message || 'Failed to sync GitHub repositories',
+      error?.statusCode || 500
+    )
   }
 })
 
@@ -115,73 +121,139 @@ async function syncOrganizationData(companyId: string, logger: any) {
  * Sync individual employee contributions
  */
 async function syncEmployeeContributions(employeeId: string, logger: any) {
+  console.log('Starting syncEmployeeContributions for:', employeeId)
+
   const employee = await db.employee.findUnique({
     where: { id: employeeId },
     include: { githubConnection: true }
   })
 
+  console.log('Employee found:', employee?.id, 'GitHub connected:', !!employee?.githubConnection)
+
   if (!employee) {
     throw new NotFoundError('Employee', employeeId)
   }
 
-  // If employee doesn't have GitHub connected, try auto-discovery
-  if (!employee.githubUsername) {
-    const orgMember = await db.gitHubOrganizationMember.findFirst({
-      where: {
-        companyId: employee.companyId,
-        employeeId: employee.id
-      }
+  // Check if employee has GitHub connected
+  if (!employee.githubConnection || !employee.githubUsername) {
+    console.error('No GitHub connection found for employee:', employeeId)
+    throw new NotFoundError(
+      'GitHub connection',
+      'Please connect your GitHub account first'
+    )
+  }
+
+  // Get GitHub client using employee's OAuth token
+  console.log('Getting GitHub client for employee:', employeeId)
+  const { GitHubService } = await import('@/services/github/client')
+  const connection = await GitHubService.getConnection(employeeId)
+  console.log('Connection retrieved:', !!connection)
+
+  if (!connection) {
+    throw new NotFoundError('GitHub connection', 'Connection not found')
+  }
+
+  const github = new GitHubService(connection.accessToken)
+
+  // Comprehensive repository fetching strategy
+  const allRepos = new Map<string, any>() // Use Map to deduplicate by full_name
+
+  console.log('=== COMPREHENSIVE REPO SYNC ===')
+
+  // 1. Fetch owned, collaborator, and org member repos
+  console.log('1. Fetching owned, collaborator, and org repos...')
+  const ownedRepos = await github.getAllAccessibleRepos()
+  console.log(`   Found ${ownedRepos.length} owned/collaborator/org repos`)
+  ownedRepos.forEach(repo => allRepos.set(repo.full_name, repo))
+
+  // 2. Fetch public repos via public API
+  if (employee.githubUsername) {
+    console.log('2. Fetching public repos via public API...')
+    const publicRepos = await github.getUserRepos(employee.githubUsername)
+    console.log(`   Found ${publicRepos.length} public repos`)
+    publicRepos.forEach(repo => allRepos.set(repo.full_name, repo))
+
+    // 3. Fetch repos where user contributed (via merged PRs)
+    console.log('3. Searching for contributed repos (merged PRs)...')
+    const contributedRepos = await github.searchContributedRepos(employee.githubUsername)
+    console.log(`   Found ${contributedRepos.length} contributed repos`)
+    contributedRepos.forEach(repo => allRepos.set(repo.full_name, repo))
+  }
+
+  const repos = Array.from(allRepos.values())
+  console.log(`=== TOTAL UNIQUE REPOS: ${repos.length} ===`)
+  logger.info(`Found ${repos.length} total repositories (owned + public + contributed)`)
+
+  // Save repositories to database
+  let savedRepos = 0
+  for (const repo of repos) {
+    const existingRepo = await db.repository.findFirst({
+      where: { githubRepoId: String(repo.id) }
     })
 
-    if (!orgMember) {
-      throw new NotFoundError(
-        'GitHub connection',
-        'Employee not connected to GitHub and not found in organization'
-      )
+    if (existingRepo) {
+      await db.repository.update({
+        where: { id: existingRepo.id },
+        data: {
+          name: repo.name,
+          fullName: repo.full_name,
+          description: repo.description,
+          primaryLanguage: repo.language,
+          stars: repo.stargazers_count || 0,
+          forks: repo.forks_count || 0,
+          isPrivate: repo.private,
+          pushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null
+        }
+      })
+    } else {
+      await db.repository.create({
+        data: {
+          employeeId: employeeId,
+          githubRepoId: String(repo.id),
+          name: repo.name,
+          fullName: repo.full_name,
+          description: repo.description,
+          homepage: repo.homepage,
+          defaultBranch: repo.default_branch || 'main',
+          primaryLanguage: repo.language,
+          languages: {},
+          stars: repo.stargazers_count || 0,
+          forks: repo.forks_count || 0,
+          watchers: repo.watchers_count || 0,
+          size: repo.size || 0,
+          openIssues: repo.open_issues_count || 0,
+          isPrivate: repo.private,
+          isFork: repo.fork || false,
+          createdAt: repo.created_at ? new Date(repo.created_at) : new Date(),
+          pushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null
+        }
+      })
+      savedRepos++
     }
   }
 
-  // Match employee contributions to organization repositories
-  const matchResult = await enhancedGitHubService.matchEmployeeContributions(employeeId)
-
-  // Get updated skill count
-  const skillCount = await db.skillRecord.count({
-    where: { employeeId }
+  // Update last sync time
+  await db.gitHubConnection.update({
+    where: { employeeId },
+    data: { updatedAt: new Date() }
   })
+
+  // Get total repositories and skill count
+  const [totalRepositories, skillCount] = await Promise.all([
+    db.repository.count({ where: { employeeId } }),
+    db.skillRecord.count({ where: { employeeId } })
+  ])
 
   return {
     type: 'employee_sync',
-    contributions: matchResult,
+    totalRepos: repos.length,
+    newRepos: savedRepos,
+    repositories: totalRepositories,
+    skillCount: skillCount,
     skills: {
       total: skillCount,
       updated: new Date().toISOString()
-    },
-    recommendations: generateEmployeeRecommendations(matchResult, skillCount)
+    }
   }
 }
 
-/**
- * Generate recommendations for employee based on sync results
- */
-function generateEmployeeRecommendations(matchResult: any, skillCount: number): string[] {
-  const recommendations: string[] = []
-
-  if (matchResult.matchedRepositories === 0) {
-    recommendations.push('No repository contributions found - ensure you\'re committing with the correct email address')
-    recommendations.push('Contact your admin to verify your GitHub username is correctly linked')
-  }
-
-  if (skillCount === 0) {
-    recommendations.push('No skills detected - make sure you\'re contributing to repositories with recognizable programming languages')
-  }
-
-  if (skillCount > 0 && skillCount < 5) {
-    recommendations.push('Consider diversifying your technical skills by contributing to different types of projects')
-  }
-
-  if (matchResult.totalCommits > 100) {
-    recommendations.push('Great activity level! Consider generating a skill certificate to showcase your expertise')
-  }
-
-  return recommendations
-}

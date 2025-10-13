@@ -2,7 +2,7 @@ import { db } from './db'
 import { encrypt, decrypt } from './crypto'
 import { config } from './config'
 import { NotFoundError, ExternalServiceError } from './errors'
-import { logger } from './logger'
+import { createLogger } from './logger'
 
 // GitHub token types for different integration levels
 export enum GitHubTokenType {
@@ -22,7 +22,7 @@ export interface GitHubTokenData {
 }
 
 export class GitHubTokenManager {
-  private readonly logger = logger.withContext({ service: 'github_token_manager' })
+  private readonly logger = createLogger({ service: 'github_token_manager' })
 
   /**
    * Store encrypted GitHub tokens for a company

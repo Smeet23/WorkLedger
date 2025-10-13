@@ -115,7 +115,7 @@ async function getCompanyIdFromInstallation(installationId?: number): Promise<st
 }
 
 async function processWebhook(event: string, payload: any, webhookId: string): Promise<void> {
-  const webhookLogger = logger.withContext({ webhookId, event })
+  const webhookLogger = createLogger({ webhookId, event })
 
   try {
     switch (event) {

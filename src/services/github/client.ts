@@ -20,10 +20,17 @@ export class GitHubService {
 
   static getOAuthUrl(state: string): string {
     const clientId = process.env.GITHUB_CLIENT_ID
-    const redirectUri = `${process.env.APP_URL || 'http://localhost:3000'}/api/github/callback`
+    const redirectUri = `${process.env.NEXTAUTH_URL || process.env.APP_URL || 'http://localhost:3000'}/api/github/callback`
     const scope = 'repo user:email read:org'
 
-    return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`
+    const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`
+
+    console.log('=== OAUTH URL GENERATION ===')
+    console.log('Client ID:', clientId)
+    console.log('Redirect URI:', redirectUri)
+    console.log('Generated OAuth URL:', oauthUrl)
+
+    return oauthUrl
   }
 
   static async exchangeCodeForToken(code: string): Promise<{ access_token: string; scope: string; token_type: string }> {
@@ -187,15 +194,24 @@ export class GitHubService {
     const encryptedAccessToken = encrypt(accessToken)
     const encryptedRefreshToken = refreshToken ? encrypt(refreshToken) : null
 
-    return await db.gitHubConnection.upsert({
-      where: { employeeId },
-      update: {
-        accessToken: encryptedAccessToken,
-        refreshToken: encryptedRefreshToken,
-        isActive: true,
-        updatedAt: new Date()
-      },
-      create: {
+    // First, delete any existing connections for this GitHub user ID
+    // This handles the case where the user reconnects with the same GitHub account
+    await db.gitHubConnection.deleteMany({
+      where: {
+        githubUserId: String(githubData.id)
+      }
+    })
+
+    // Also delete any existing connection for this employee
+    await db.gitHubConnection.deleteMany({
+      where: {
+        employeeId: employeeId
+      }
+    })
+
+    // Now create a fresh connection
+    return await db.gitHubConnection.create({
+      data: {
         employeeId,
         githubUserId: String(githubData.id),
         githubUsername: githubData.login,

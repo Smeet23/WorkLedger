@@ -1,7 +1,7 @@
 import { GitLabService, GitLabProject } from './client'
 import { db } from '@/lib/db'
 import { config } from '@/lib/config'
-import { logger } from '@/lib/logger'
+import { createLogger } from '@/lib/logger'
 import { SkillLevel } from '@prisma/client'
 
 export interface DetectedSkill {
@@ -17,7 +17,7 @@ export interface DetectedSkill {
 
 export class GitLabSkillDetector {
   private gitlabService: GitLabService
-  private serviceLogger = logger.withContext({ service: 'gitlab_skill_detector' })
+  private serviceLogger = createLogger({ service: 'gitlab_skill_detector' })
 
   constructor(accessToken: string) {
     this.gitlabService = new GitLabService(accessToken)

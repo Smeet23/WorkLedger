@@ -4,6 +4,11 @@ import { GitHubService } from '@/services/github/client'
 import { generateSecureToken } from '@/lib/crypto'
 import { db } from '@/lib/db'
 
+/**
+ * EMPLOYEE OAuth Connect Route
+ * This route is ONLY for individual employee OAuth connections
+ * NOT for GitHub App installations
+ */
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
@@ -11,6 +16,10 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.redirect(new URL('/auth/signin', request.url))
     }
+
+    console.log('=== EMPLOYEE OAUTH CONNECT ===')
+    console.log('User:', session.user.email)
+    console.log('Role:', session.user.role)
 
     // Get the return URL from query params (where to redirect after OAuth)
     const returnUrl = request.nextUrl.searchParams.get('returnUrl') || '/employee/dashboard'
@@ -23,7 +32,6 @@ export async function GET(request: NextRequest) {
 
     // If no employee record exists, create one
     if (!employee) {
-      // First, find or create a company based on email domain
       const emailDomain = session.user.email.split('@')[1]
 
       let company = await db.company.findFirst({
@@ -39,7 +47,6 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      // Create employee record
       const employeeRole = session.user.role === 'company_admin' ? 'MANAGER' : 'OTHER'
       employee = await db.employee.create({
         data: {
@@ -63,23 +70,19 @@ export async function GET(request: NextRequest) {
     })
 
     if (existingConnection?.isActive) {
-      return NextResponse.json({
-        message: 'Already connected to GitHub',
-        connected: true
-      })
+      console.log('Already connected, redirecting to return URL')
+      return NextResponse.redirect(new URL(`${returnUrl}?already_connected=true`, request.url))
     }
 
     // Generate state token for CSRF protection
     const state = generateSecureToken()
 
-    // Get OAuth URL
+    // Get OAuth URL (NOT GitHub App URL)
     const oauthUrl = GitHubService.getOAuthUrl(state)
-    console.log('=== GITHUB CONNECT ===')
-    console.log('Employee ID:', employee.id)
     console.log('OAuth URL:', oauthUrl)
     console.log('State:', state)
 
-    // Store state in session (you might want to use a more persistent storage)
+    // Create response with redirect to GitHub OAuth
     const response = NextResponse.redirect(oauthUrl)
 
     // Set state in cookie for verification
@@ -108,9 +111,9 @@ export async function GET(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('GitHub connect error:', error)
+    console.error('GitHub OAuth connect error:', error)
     return NextResponse.json(
-      { error: 'Failed to initiate GitHub connection' },
+      { error: 'Failed to initiate GitHub OAuth connection' },
       { status: 500 }
     )
   }

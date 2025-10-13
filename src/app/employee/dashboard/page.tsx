@@ -1,10 +1,7 @@
 import { requireAuth, getUserWithCompany } from "@/lib/session"
-import { StatCard } from "@/components/ui/stat-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { EmptyState } from "@/components/ui/empty-state"
 import Link from "next/link"
 import { db } from "@/lib/db"
 import {
@@ -18,7 +15,10 @@ import {
   CheckCircle,
   GitCommitHorizontal,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Target,
+  ArrowRight,
+  ChevronRight
 } from 'lucide-react'
 import { format, formatDistance } from 'date-fns'
 
@@ -112,256 +112,297 @@ export default async function EmployeePortal() {
   }, {} as Record<string, number>)
 
   return (
-    <div className="container mx-auto p-6 space-y-8 animate-fade-in">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+        {/* Welcome Header - Clean & Professional */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 md:p-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium mb-1">Welcome back</p>
+              <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
+                {employee.firstName} {employee.lastName}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {company.name} · {daysAtCompany} days
+              </p>
+            </div>
+            <div className="flex gap-6 text-center">
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{skillCount}</div>
+                <div className="text-xs text-gray-500">Skills</div>
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{certificateCount}</div>
+                <div className="text-xs text-gray-500">Certificates</div>
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{totalCommitCount}</div>
+                <div className="text-xs text-gray-500">Commits</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* GitHub Connection Alert */}
         {!githubConnection && (
-          <Alert className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent animate-slide-up">
-            <Github className="h-5 w-5 text-primary" />
-            <AlertTitle className="text-lg font-semibold">Connect Your GitHub Account</AlertTitle>
-            <AlertDescription className="mt-2">
-              <p className="mb-4 text-muted-foreground">
-                Unlock automatic skill tracking by connecting your GitHub account. WorkLedger will analyze your contributions to generate verified skill certificates.
-              </p>
-              <div className="flex flex-wrap items-center gap-6 mb-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">Automatic skill detection</span>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex gap-4">
+                <div className="w-12 h-12 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+                  <Github className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">Track all contributions</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">Generate certificates</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Connect Your GitHub Account</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Automatically track your contributions and generate verified certificates
+                  </p>
+                  <ul className="space-y-1 text-sm text-gray-600 mb-4">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-gray-400" />
+                      Automatic skill detection
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-gray-400" />
+                      Track contributions
+                    </li>
+                  </ul>
                 </div>
               </div>
-              <Button
-                asChild
-                className="bg-gray-900 hover:bg-gray-800 shadow-sm interactive"
-              >
-                <Link href="/api/github/connect">
+              <Button asChild>
+                <Link href="/api/github/connect?returnUrl=/employee/dashboard">
                   <Github className="w-4 h-4 mr-2" />
-                  Connect GitHub Now
+                  Connect GitHub
                 </Link>
               </Button>
-            </AlertDescription>
-          </Alert>
+            </div>
+          </div>
         )}
 
         {/* GitHub Connected Status */}
         {githubConnection && githubConnection.isActive && (
-          <Alert className="border-success/20 bg-success-light animate-slide-up">
-            <CheckCircle className="h-5 w-5 text-success" />
-            <AlertTitle className="text-lg font-semibold">GitHub Connected</AlertTitle>
-            <AlertDescription>
-              <div className="flex items-center justify-between">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <p className="text-sm">
-                    Connected as <span className="font-mono font-semibold">@{githubConnection.githubUsername}</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-lg font-semibold text-gray-900">GitHub Connected</h3>
+                    <Badge variant="outline" className="text-green-700 border-green-700">Active</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Connected as <span className="font-mono font-semibold text-gray-900">@{githubConnection.githubUsername}</span>
                   </p>
                   {githubConnection.lastSync && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       Last synced: {formatDistance(new Date(githubConnection.lastSync), new Date(), { addSuffix: true })}
                     </p>
                   )}
                 </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                >
-                  <Link href="/dashboard/integrations/github">
-                    Manage Connection
-                  </Link>
-                </Button>
               </div>
-            </AlertDescription>
-          </Alert>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/employee/github">
+                  Manage
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </div>
         )}
 
-        {/* Welcome Section */}
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">
-            Welcome to {company.name}
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Track your professional growth and view your skill certificates
-          </p>
-        </div>
-
         {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Skills Tracked"
-            value={skillCount}
-            icon={Code}
-            description={skillLevels.EXPERT > 0 ? `${skillLevels.EXPERT} Expert Level` : 'Keep learning'}
-            trend={{ value: 15, label: "Growing" }}
-            variant="gradient"
-            color="blue"
-            className="animate-slide-up"
-          />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Skill Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <Code className="w-5 h-5 text-gray-700" />
+              </div>
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">{skillCount}</div>
+            <div className="text-sm text-gray-600 mb-2">Skills Tracked</div>
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <TrendingUp className="w-3 h-3" />
+              {skillLevels.EXPERT > 0 ? `${skillLevels.EXPERT} Expert` : 'Keep learning'}
+            </div>
+          </div>
 
-          <StatCard
-            title="Certificates Earned"
-            value={certificateCount}
-            icon={Award}
-            description="Professional achievements"
-            variant="gradient"
-            color="green"
-            className="animate-slide-up"
-            style={{ animationDelay: "50ms" }}
-          />
+          {/* Certificates Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <Award className="w-5 h-5 text-gray-700" />
+              </div>
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">{certificateCount}</div>
+            <div className="text-sm text-gray-600 mb-2">Certificates Earned</div>
+            <div className="text-xs text-gray-500">
+              Professional achievements
+            </div>
+          </div>
 
-          <StatCard
-            title="Total Commits"
-            value={totalCommitCount}
-            icon={GitCommitHorizontal}
-            description={repositoryCount > 0 ? `${repositoryCount} repositories` : 'Connect GitHub'}
-            trend={{ value: 22, direction: "up" }}
-            variant="gradient"
-            color="purple"
-            className="animate-slide-up"
-            style={{ animationDelay: "100ms" }}
-          />
+          {/* Commits Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <GitCommitHorizontal className="w-5 h-5 text-gray-700" />
+              </div>
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">{totalCommitCount}</div>
+            <div className="text-sm text-gray-600 mb-2">Total Commits</div>
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <Target className="w-3 h-3" />
+              {repositoryCount} repositories
+            </div>
+          </div>
 
-          <StatCard
-            title="Days at Company"
-            value={daysAtCompany}
-            icon={Calendar}
-            description="Your journey"
-            variant="gradient"
-            color="orange"
-            className="animate-slide-up"
-            style={{ animationDelay: "150ms" }}
-          />
+          {/* Days at Company Card */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-gray-700" />
+              </div>
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">{daysAtCompany}</div>
+            <div className="text-sm text-gray-600 mb-2">Days at Company</div>
+            <div className="text-xs text-gray-500">
+              Your journey continues
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="card-hover group border-2 border-primary/20">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Generate Certificate */}
+            <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
               <CardHeader>
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-110">
-                  <Trophy className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-3">
+                  <Trophy className="w-5 h-5 text-gray-700" />
                 </div>
-                <CardTitle className="text-lg mt-4">Generate Certificate</CardTitle>
+                <CardTitle className="text-base">Generate Certificate</CardTitle>
                 <CardDescription>Create a new professional certificate</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild className="w-full shadow-sm interactive">
+                <Button asChild className="w-full">
                   <Link href="/employee/certificates/generate">
-                    Generate New Certificate
+                    Create Certificate
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="card-hover group">
+            {/* My Certificates */}
+            <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 transition-transform group-hover:scale-110">
-                    <Award className="w-6 h-6" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Award className="w-5 h-5 text-gray-700" />
                   </div>
                   {certificateCount > 0 && (
-                    <Badge variant="success-soft" size="sm">{certificateCount}</Badge>
+                    <Badge variant="secondary">{certificateCount}</Badge>
                   )}
                 </div>
-                <CardTitle className="text-lg mt-4">My Certificates</CardTitle>
+                <CardTitle className="text-base">My Certificates</CardTitle>
                 <CardDescription>View and download your certificates</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" className="w-full interactive">
+                <Button asChild variant="outline" className="w-full">
                   <Link href="/employee/certificates">
-                    View All Certificates
+                    View Certificates
+                    <ChevronRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
               </CardContent>
             </Card>
 
+            {/* GitHub Card */}
             {githubConnection ? (
-              <Card className="card-hover group border-success/20 bg-success-light/30">
+              <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
                 <CardHeader>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-900 text-white transition-transform group-hover:scale-110">
-                    <Github className="w-6 h-6" />
+                  <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center mb-3">
+                    <Github className="w-5 h-5 text-white" />
                   </div>
-                  <CardTitle className="text-lg mt-4">GitHub Connected</CardTitle>
+                  <CardTitle className="text-base">GitHub Connected</CardTitle>
                   <CardDescription>Syncing {repositoryCount} repositories</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total Commits:</span>
-                      <span className="font-semibold">{totalCommitCount}</span>
+                  <div className="space-y-2 mb-4 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Total Commits:</span>
+                      <span className="font-semibold text-gray-900">{totalCommitCount}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Skills Detected:</span>
-                      <span className="font-semibold">{skillCount}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Skills Detected:</span>
+                      <span className="font-semibold text-gray-900">{skillCount}</span>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full interactive" asChild>
-                    <Link href="/dashboard/integrations/github">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/employee/github">
                       Manage GitHub
+                      <ChevronRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="card-hover group border-warning/20 bg-warning-light/30">
+              <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10 text-warning transition-transform group-hover:scale-110">
-                      <AlertCircle className="w-6 h-6" />
-                    </div>
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-3">
+                    <AlertCircle className="w-5 h-5 text-gray-700" />
                   </div>
-                  <CardTitle className="text-lg mt-4">GitHub Not Connected</CardTitle>
-                  <CardDescription>Connect to track your contributions</CardDescription>
+                  <CardTitle className="text-base">Connect GitHub</CardTitle>
+                  <CardDescription>Start tracking your contributions</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button
-                    asChild
-                    className="w-full bg-gray-900 hover:bg-gray-800 interactive"
-                  >
-                    <Link href="/api/github/connect">
+                  <Button asChild className="w-full">
+                    <Link href="/api/github/connect?returnUrl=/employee/dashboard">
                       <Github className="w-4 h-4 mr-2" />
-                      Connect GitHub
+                      Connect Now
+                      <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
                 </CardContent>
               </Card>
             )}
 
-            <Card className="card-hover group">
+            {/* Repositories */}
+            <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
               <CardHeader>
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 transition-transform group-hover:scale-110">
-                  <GitBranch className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-3">
+                  <GitBranch className="w-5 h-5 text-gray-700" />
                 </div>
-                <CardTitle className="text-lg mt-4">My Repositories ({repositoryCount})</CardTitle>
-                <CardDescription>Browse your repositories and commits</CardDescription>
+                <CardTitle className="text-base">Repositories ({repositoryCount})</CardTitle>
+                <CardDescription>Browse your repos and commits</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" className="w-full interactive">
+                <Button asChild variant="outline" className="w-full">
                   <Link href="/employee/repositories">
                     View Repositories
+                    <ChevronRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="card-hover group">
+            {/* Skill Progress */}
+            <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
               <CardHeader>
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 transition-transform group-hover:scale-110">
-                  <TrendingUp className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-3">
+                  <TrendingUp className="w-5 h-5 text-gray-700" />
                 </div>
-                <CardTitle className="text-lg mt-4">Skill Progress</CardTitle>
-                <CardDescription>See your skill development over time</CardDescription>
+                <CardTitle className="text-base">Skill Progress</CardTitle>
+                <CardDescription>See your development over time</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" className="w-full interactive">
+                <Button asChild variant="outline" className="w-full">
                   <Link href="/employee/skills">
                     View Progress
+                    <ChevronRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
               </CardContent>
@@ -370,43 +411,45 @@ export default async function EmployeePortal() {
         </div>
 
         {/* Skills and Repositories Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           {/* Skills Section */}
-          <Card className="card-hover">
+          <Card className="border border-gray-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Code className="w-5 h-5" />
-                Your Skills
-              </CardTitle>
-              <CardDescription>
-                {skillCount > 0 ? `${skillCount} skills detected from your GitHub activity` : 'No skills tracked yet'}
-              </CardDescription>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Code className="w-5 h-5 text-gray-700" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Your Skills</CardTitle>
+                  <CardDescription className="text-sm">
+                    {skillCount > 0 ? `${skillCount} skills from GitHub activity` : 'No skills tracked yet'}
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {skillRecords.length > 0 ? (
-                <div className="space-y-3">
-                  {skillRecords.slice(0, 8).map((record) => (
-                    <div key={record.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                <div className="space-y-2">
+                  {skillRecords.slice(0, 8).map((record, index) => (
+                    <div
+                      key={record.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
                       <div className="flex items-center gap-3">
-                        <Code className="w-4 h-4 text-muted-foreground" />
+                        <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center">
+                          <Code className="w-4 h-4 text-gray-600" />
+                        </div>
                         <div>
-                          <p className="font-medium text-sm">{record.skill.name}</p>
-                          <p className="text-xs text-muted-foreground">{record.skill.category}</p>
+                          <p className="font-medium text-gray-900 text-sm">{record.skill.name}</p>
+                          <p className="text-xs text-gray-500">{record.skill.category}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge
-                          variant={
-                            record.level === 'EXPERT' ? 'success' :
-                            record.level === 'ADVANCED' ? 'default' :
-                            'outline'
-                          }
-                          size="sm"
-                        >
+                        <Badge variant="secondary" className="text-xs">
                           {record.level}
                         </Badge>
                         {record.confidence && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-gray-600">
                             {Math.round(record.confidence * 100)}%
                           </span>
                         )}
@@ -414,76 +457,109 @@ export default async function EmployeePortal() {
                     </div>
                   ))}
                   {skillRecords.length > 8 && (
-                    <p className="text-sm text-muted-foreground text-center pt-2">
-                      +{skillRecords.length - 8} more skills
-                    </p>
+                    <div className="text-center pt-3">
+                      <Button asChild variant="outline" size="sm" className="w-full">
+                        <Link href="/employee/skills">
+                          View all {skillRecords.length} skills
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Link>
+                      </Button>
+                    </div>
                   )}
                 </div>
               ) : (
-                <EmptyState
-                  icon={Code}
-                  title="No skills tracked yet"
-                  description="Connect your GitHub to start tracking"
-                  variant="compact"
-                />
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                    <Code className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-1">No skills tracked yet</h3>
+                  <p className="text-sm text-gray-600 mb-4">Connect your GitHub to start tracking</p>
+                  <Button asChild size="sm">
+                    <Link href="/api/github/connect?returnUrl=/employee/dashboard">
+                      <Github className="w-4 h-4 mr-2" />
+                      Connect GitHub
+                    </Link>
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Repositories Section */}
-          <Card className="card-hover">
+          <Card className="border border-gray-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GitBranch className="w-5 h-5" />
-                Recent Repositories
-              </CardTitle>
-              <CardDescription>
-                {repositories.length > 0
-                  ? `${totalCommitCount} commits across ${repositoryCount} repositories`
-                  : 'No repositories synced yet'}
-              </CardDescription>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <GitBranch className="w-5 h-5 text-gray-700" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Recent Repositories</CardTitle>
+                  <CardDescription className="text-sm">
+                    {repositories.length > 0
+                      ? `${totalCommitCount} commits across ${repositoryCount} repos`
+                      : 'No repositories synced yet'}
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {repositories.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {repositories.slice(0, 5).map((repo) => (
-                    <div key={repo.id} className="p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <div key={repo.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <GitBranch className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                            <p className="font-medium text-sm truncate">{repo.name}</p>
+                            <GitBranch className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                            <p className="font-medium text-gray-900 text-sm truncate">{repo.name}</p>
                             {repo.isPrivate && (
-                              <Badge variant="outline" size="sm">Private</Badge>
+                              <Badge variant="outline" className="text-xs">Private</Badge>
                             )}
                           </div>
                           {repo.description && (
-                            <p className="text-xs text-muted-foreground truncate-2 mb-1">{repo.description}</p>
+                            <p className="text-xs text-gray-600 line-clamp-2 mb-2">{repo.description}</p>
                           )}
                           {repo.primaryLanguage && (
-                            <Badge variant="info-soft" size="sm">{repo.primaryLanguage}</Badge>
+                            <Badge variant="secondary" className="text-xs">{repo.primaryLanguage}</Badge>
                           )}
                         </div>
-                        <div className="text-right ml-4">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <div className="text-right ml-4 flex-shrink-0">
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                             <Star className="w-3 h-3" />
                             {repo.stars}
                           </div>
-                          <p className="text-xs text-primary font-semibold mt-1">
-                            {repo._count.commits} commits
+                          <p className="text-sm font-medium text-gray-900">
+                            {repo._count.commits}
                           </p>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {repositories.length > 5 && (
+                    <div className="text-center pt-3">
+                      <Button asChild variant="outline" size="sm" className="w-full">
+                        <Link href="/employee/repositories">
+                          View all {repositories.length} repositories
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <EmptyState
-                  icon={GitBranch}
-                  title="No repositories yet"
-                  description="Connect GitHub and sync your repos"
-                  variant="compact"
-                />
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                    <GitBranch className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-1">No repositories yet</h3>
+                  <p className="text-sm text-gray-600 mb-4">Connect GitHub and sync your repos</p>
+                  <Button asChild size="sm">
+                    <Link href="/api/github/connect?returnUrl=/employee/dashboard">
+                      <Github className="w-4 h-4 mr-2" />
+                      Connect GitHub
+                    </Link>
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -491,26 +567,40 @@ export default async function EmployeePortal() {
 
         {/* Recent Certificates */}
         {certificates.length > 0 && (
-          <Card className="card-hover">
+          <Card className="border border-gray-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="w-5 h-5" />
-                Recent Certificates
-              </CardTitle>
-              <CardDescription>Your newest achievements</CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Award className="w-5 h-5 text-gray-700" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Recent Certificates</CardTitle>
+                    <CardDescription>Your newest achievements</CardDescription>
+                  </div>
+                </div>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/employee/certificates">
+                    View All
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {certificates.slice(0, 3).map((cert) => (
-                  <div key={cert.id} className="p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <Award className="w-5 h-5 text-primary" />
-                      <Badge variant={cert.status === 'ISSUED' ? 'success' : 'secondary'} size="sm">
+                  <div key={cert.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                        <Award className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <Badge variant={cert.status === 'ISSUED' ? 'default' : 'secondary'} className="text-xs">
                         {cert.status}
                       </Badge>
                     </div>
-                    <p className="font-medium text-sm mb-1">{cert.title}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-medium text-gray-900 mb-1 text-sm">{cert.title}</p>
+                    <p className="text-xs text-gray-500">
                       Issued: {format(new Date(cert.issueDate), 'MMM d, yyyy')}
                     </p>
                   </div>
@@ -520,5 +610,6 @@ export default async function EmployeePortal() {
           </Card>
         )}
       </div>
+    </div>
   )
 }

@@ -127,10 +127,8 @@ export function AcceptInvitationForm({ invitation, existingUser }: AcceptInvitat
   }
 
   const connectGitHub = () => {
-    // Store return URL in session storage
-    sessionStorage.setItem('github_return_url', '/employee/onboarding/complete')
-    // Redirect to GitHub OAuth
-    window.location.href = '/api/github/connect'
+    // Redirect to GitHub OAuth with return URL
+    window.location.href = '/api/github/connect?returnUrl=/employee/onboarding/complete'
   }
 
   const skipGitHubConnection = () => {

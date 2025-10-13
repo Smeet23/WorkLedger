@@ -6,7 +6,7 @@ import {
   RateLimitError,
   AuthenticationError,
 } from '@/lib/errors'
-import { logger } from '@/lib/logger'
+import { createLogger } from '@/lib/logger'
 
 export interface GitLabOAuthConfig {
   clientId: string
@@ -59,7 +59,7 @@ export interface GitLabUser {
 export class GitLabService {
   private readonly apiUrl: string
   private readonly accessToken?: string
-  private readonly serviceLogger = logger.withContext({ service: 'gitlab' })
+  private readonly serviceLogger = createLogger({ service: 'gitlab' })
 
   constructor(accessToken?: string) {
     this.apiUrl = config.gitlab.api.baseUrl

@@ -167,10 +167,17 @@ export default async function ManagerDashboard() {
   const analytics = await getTeamAnalytics(company.id)
 
   return (
-    <div className="container mx-auto p-8 space-y-8 animate-fade-in">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+        {/* Header */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Manager Dashboard</h1>
+          <p className="text-sm text-gray-600">{company.name} · Team Overview</p>
+        </div>
+
         {/* Critical Alerts */}
         {analytics.needsAttention.length > 0 && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
+          <Alert className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertTitle>Immediate Attention Required</AlertTitle>
             <AlertDescription>
@@ -200,80 +207,78 @@ export default async function ManagerDashboard() {
         )}
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border border-gray-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Team Size</p>
-                  <p className="text-2xl font-bold">{analytics.employees.length}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {analytics.connectedEmployees} connected
-                  </p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-gray-700" />
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
+              </div>
+              <div>
+                <p className="text-3xl font-semibold text-gray-900 mb-1">{analytics.employees.length}</p>
+                <p className="text-sm text-gray-600 mb-2">Team Size</p>
+                <p className="text-xs text-gray-500">
+                  {analytics.connectedEmployees} connected
+                </p>
               </div>
               <Progress value={analytics.connectionRate} className="mt-3 h-1" />
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Today's Velocity</p>
-                  <p className="text-2xl font-bold">{analytics.todayVelocity}</p>
-                  <p className="text-xs text-gray-500 mt-1">commits today</p>
-                </div>
-                <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-green-600" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-gray-700" />
                 </div>
               </div>
-              <div className="flex items-center mt-3">
-                {analytics.weekTrend === 'up' && <ArrowUp className="w-4 h-4 text-green-500 mr-1" />}
-                {analytics.weekTrend === 'down' && <ArrowDown className="w-4 h-4 text-red-500 mr-1" />}
-                {analytics.weekTrend === 'stable' && <Minus className="w-4 h-4 text-gray-500 mr-1" />}
-                <span className="text-xs text-gray-600">
+              <div>
+                <p className="text-3xl font-semibold text-gray-900 mb-1">{analytics.todayVelocity}</p>
+                <p className="text-sm text-gray-600 mb-2">Today's Velocity</p>
+                <div className="flex items-center text-xs text-gray-500">
+                  {analytics.weekTrend === 'up' && <ArrowUp className="w-3 h-3 text-green-600 mr-1" />}
+                  {analytics.weekTrend === 'down' && <ArrowDown className="w-3 h-3 text-red-600 mr-1" />}
+                  {analytics.weekTrend === 'stable' && <Minus className="w-3 h-3 text-gray-500 mr-1" />}
                   {analytics.weekTrend === 'up' ? 'Above' : analytics.weekTrend === 'down' ? 'Below' : 'Meeting'} target
-                </span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Active Work</p>
-                  <p className="text-2xl font-bold">{analytics.activeTickets}</p>
-                  <p className="text-xs text-gray-500 mt-1">in progress</p>
-                </div>
-                <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Target className="h-6 w-6 text-purple-600" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-gray-700" />
                 </div>
               </div>
-              {analytics.blockedItems > 0 && (
-                <div className="mt-3 flex items-center">
-                  <AlertTriangle className="w-3 h-3 text-orange-500 mr-1" />
-                  <span className="text-xs text-orange-600">{analytics.blockedItems} blocked</span>
-                </div>
-              )}
+              <div>
+                <p className="text-3xl font-semibold text-gray-900 mb-1">{analytics.activeTickets}</p>
+                <p className="text-sm text-gray-600 mb-2">Active Work</p>
+                {analytics.blockedItems > 0 ? (
+                  <div className="flex items-center text-xs text-orange-600">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    {analytics.blockedItems} blocked
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">in progress</p>
+                )}
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Avg Output</p>
-                  <p className="text-2xl font-bold">{Math.round(analytics.avgCommitsPerDev)}</p>
-                  <p className="text-xs text-gray-500 mt-1">commits/dev/week</p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-gray-700" />
                 </div>
-                <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-orange-600" />
-                </div>
+              </div>
+              <div>
+                <p className="text-3xl font-semibold text-gray-900 mb-1">{Math.round(analytics.avgCommitsPerDev)}</p>
+                <p className="text-sm text-gray-600 mb-2">Avg Output</p>
+                <p className="text-xs text-gray-500">commits/dev/week</p>
               </div>
             </CardContent>
           </Card>
@@ -281,24 +286,24 @@ export default async function ManagerDashboard() {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="realtime" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="realtime">
+          <TabsList className="bg-white border border-gray-200 p-1">
+            <TabsTrigger value="realtime" className="data-[state=active]:bg-gray-100">
               <Activity className="w-4 h-4 mr-2" />
               Real-time
             </TabsTrigger>
-            <TabsTrigger value="team">
+            <TabsTrigger value="team" className="data-[state=active]:bg-gray-100">
               <Users className="w-4 h-4 mr-2" />
               Team Status
             </TabsTrigger>
-            <TabsTrigger value="performance">
+            <TabsTrigger value="performance" className="data-[state=active]:bg-gray-100">
               <TrendingUp className="w-4 h-4 mr-2" />
               Performance
             </TabsTrigger>
-            <TabsTrigger value="workload">
+            <TabsTrigger value="workload" className="data-[state=active]:bg-gray-100">
               <Clock className="w-4 h-4 mr-2" />
               Workload
             </TabsTrigger>
-            <TabsTrigger value="insights">
+            <TabsTrigger value="insights" className="data-[state=active]:bg-gray-100">
               <Brain className="w-4 h-4 mr-2" />
               AI Insights
             </TabsTrigger>
@@ -306,11 +311,11 @@ export default async function ManagerDashboard() {
 
           {/* Real-time Activity Tab */}
           <TabsContent value="realtime">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Live Activity Feed */}
-              <Card>
+              <Card className="border border-gray-200">
                 <CardHeader>
-                  <CardTitle>Live Activity Feed</CardTitle>
+                  <CardTitle className="text-base">Live Activity Feed</CardTitle>
                   <CardDescription>Real-time team activities</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -338,9 +343,9 @@ export default async function ManagerDashboard() {
               </Card>
 
               {/* Team Pulse */}
-              <Card>
+              <Card className="border border-gray-200">
                 <CardHeader>
-                  <CardTitle>Team Pulse</CardTitle>
+                  <CardTitle className="text-base">Team Pulse</CardTitle>
                   <CardDescription>Current team activity status</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -395,9 +400,9 @@ export default async function ManagerDashboard() {
 
           {/* Team Status Tab */}
           <TabsContent value="team">
-            <Card>
+            <Card className="border border-gray-200">
               <CardHeader>
-                <CardTitle>Team Member Status</CardTitle>
+                <CardTitle className="text-base">Team Member Status</CardTitle>
                 <CardDescription>Individual performance and activity tracking</CardDescription>
               </CardHeader>
               <CardContent>
@@ -480,10 +485,10 @@ export default async function ManagerDashboard() {
 
           {/* Performance Tab */}
           <TabsContent value="performance">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="border border-gray-200">
                 <CardHeader>
-                  <CardTitle>Sprint Velocity</CardTitle>
+                  <CardTitle className="text-base">Sprint Velocity</CardTitle>
                   <CardDescription>Team delivery metrics</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -494,9 +499,9 @@ export default async function ManagerDashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border border-gray-200">
                 <CardHeader>
-                  <CardTitle>Skill Distribution</CardTitle>
+                  <CardTitle className="text-base">Skill Distribution</CardTitle>
                   <CardDescription>Team expertise overview</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -525,9 +530,9 @@ export default async function ManagerDashboard() {
 
           {/* Workload Tab */}
           <TabsContent value="workload">
-            <Card>
+            <Card className="border border-gray-200">
               <CardHeader>
-                <CardTitle>Team Workload Distribution</CardTitle>
+                <CardTitle className="text-base">Team Workload Distribution</CardTitle>
                 <CardDescription>Current work allocation across the team</CardDescription>
               </CardHeader>
               <CardContent>
@@ -542,9 +547,9 @@ export default async function ManagerDashboard() {
 
           {/* AI Insights Tab */}
           <TabsContent value="insights">
-            <Card>
+            <Card className="border border-gray-200">
               <CardHeader>
-                <CardTitle>AI-Powered Insights</CardTitle>
+                <CardTitle className="text-base">AI-Powered Insights</CardTitle>
                 <CardDescription>Smart recommendations based on team data</CardDescription>
               </CardHeader>
               <CardContent>
@@ -588,5 +593,6 @@ export default async function ManagerDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
   )
 }

@@ -89,9 +89,8 @@ export default async function EmployeeProfilePage({ params }: EmployeeProfilePag
 
   return (
     <div className="container mx-auto p-8 space-y-8 animate-fade-in">
-
-          {/* Employee Header */}
-          <div className="mb-8">
+      {/* Employee Header */}
+      <div className="mb-8">
             <div className="group relative">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <Card className="relative border-slate-200/60 bg-white/80 backdrop-blur-sm">
@@ -488,8 +487,6 @@ export default async function EmployeeProfilePage({ params }: EmployeeProfilePag
               </div>
             </div>
           </div>
-        </div>
-      </div>
     </div>
   )
 }

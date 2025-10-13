@@ -50,8 +50,9 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
   }
 
   const handleConnect = () => {
-    // Redirect to GitHub OAuth
-    window.location.href = '/api/github/connect'
+    // Redirect to GitHub OAuth with current page as return URL
+    const currentPath = window.location.pathname
+    window.location.href = `/api/github/connect?returnUrl=${encodeURIComponent(currentPath)}`
   }
 
   const handleDisconnect = async () => {
