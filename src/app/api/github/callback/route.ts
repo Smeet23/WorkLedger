@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
         const repos = Array.from(allRepos.values())
         console.log(`=== TOTAL UNIQUE REPOS: ${repos.length} ===`)
 
-        // Save repositories
+        // Save repositories (company-level)
         for (const repo of repos) {
           const existingRepo = await db.repository.findFirst({
             where: {
@@ -144,10 +144,28 @@ export async function GET(request: NextRequest) {
                 pushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null
               }
             })
-          } else {
-            await db.repository.create({
-              data: {
+
+            // Update or create employee-repository relationship
+            await db.employeeRepository.upsert({
+              where: {
+                employeeId_repositoryId: {
+                  employeeId: employeeId,
+                  repositoryId: existingRepo.id
+                }
+              },
+              update: {
+                lastActivityAt: new Date()
+              },
+              create: {
                 employeeId: employeeId,
+                repositoryId: existingRepo.id
+              }
+            })
+          } else if (employee?.companyId) {
+            // Create new repository at company level
+            const newRepo = await db.repository.create({
+              data: {
+                companyId: employee.companyId,
                 githubRepoId: String(repo.id),
                 name: repo.name,
                 fullName: repo.full_name,
@@ -163,8 +181,16 @@ export async function GET(request: NextRequest) {
                 openIssues: repo.open_issues_count || 0,
                 isPrivate: repo.private,
                 isFork: repo.fork || false,
-                createdAt: repo.created_at ? new Date(repo.created_at) : new Date(),
+                githubCreatedAt: repo.created_at ? new Date(repo.created_at) : new Date(),
                 pushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null
+              }
+            })
+
+            // Create employee-repository relationship
+            await db.employeeRepository.create({
+              data: {
+                employeeId: employeeId,
+                repositoryId: newRepo.id
               }
             })
           }

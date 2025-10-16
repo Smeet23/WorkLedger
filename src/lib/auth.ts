@@ -13,19 +13,16 @@ export const authConfig = {
   },
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === 'production'
-        ? '__Secure-next-auth.session-token'
-        : 'next-auth.session-token',
+      name: 'next-auth.session-token',
       options: {
         httpOnly: true,
         sameSite: 'lax' as const,
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: undefined, // Use default domain (current host)
+        secure: false, // Allow cookies over ngrok (https tunnels)
       },
     },
   },
-  useSecureCookies: process.env.NODE_ENV === 'production',
+  useSecureCookies: false, // Disable for ngrok compatibility
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
@@ -74,6 +71,8 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }: any) {
       if (user) {
+        console.log('=== JWT CALLBACK (with user) ===')
+        console.log('User:', user)
         return {
           ...token,
           role: user.role,
@@ -81,10 +80,14 @@ export const authConfig = {
           lastName: user.lastName,
         }
       }
+      console.log('=== JWT CALLBACK (token only) ===')
+      console.log('Token role:', token.role)
       return token
     },
     async session({ session, token }: any) {
-      return {
+      console.log('=== SESSION CALLBACK ===')
+      console.log('Token:', token)
+      const result = {
         ...session,
         user: {
           ...session.user,
@@ -94,6 +97,8 @@ export const authConfig = {
           lastName: token.lastName,
         },
       }
+      console.log('Session result:', result)
+      return result
     },
   },
 }

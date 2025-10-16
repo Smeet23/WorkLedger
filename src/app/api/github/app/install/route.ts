@@ -11,7 +11,7 @@ import { enhancedGitHubService } from '@/services/github/enhanced-client'
 const installationSchema = z.object({
   installation_id: z.coerce.number(),
   setup_action: z.string(),
-  state: z.string().optional()
+  state: z.string().nullable().optional()
 })
 
 // GitHub App Installation Callback
@@ -63,7 +63,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
     // Check if installation already exists
     const existingInstallation = await db.gitHubInstallation.findUnique({
-      where: { installationId: data.installation_id }
+      where: { installationId: BigInt(data.installation_id) }
     })
 
     if (existingInstallation && existingInstallation.companyId !== adminEmployee.company.id) {
@@ -76,13 +76,26 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       adminEmployee.company.id
     )
 
-    companyLogger.info('GitHub App installation completed', {
+    companyLogger.info('GitHub App installation completed, starting repository sync', {
       installationId: data.installation_id,
       adminId: session.user.id
     })
 
-    // Redirect to success page with installation details
-    const successUrl = `${config.app.url}/dashboard/integrations/github/setup-complete?installation_id=${data.installation_id}`
+    // Automatically sync repositories after installation
+    try {
+      const syncResult = await enhancedGitHubService.syncOrganizationRepositories(adminEmployee.company.id)
+      companyLogger.info('Initial repository sync completed', {
+        repositories: syncResult.repositories,
+        newRepositories: syncResult.newRepositories,
+        updatedRepositories: syncResult.updatedRepositories
+      })
+    } catch (syncError) {
+      companyLogger.error('Initial repository sync failed (non-critical)', syncError)
+      // Don't fail the installation if sync fails - user can manually sync later
+    }
+
+    // Redirect back to integrations page to show installation status
+    const successUrl = `${config.app.url}/dashboard/integrations/github?installed=true&installation_id=${data.installation_id}`
     return Response.redirect(successUrl)
 
   } catch (error) {

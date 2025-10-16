@@ -90,7 +90,7 @@ async function syncOrganizationData(companyId: string, logger: any) {
     db.employee.count({ where: { companyId } }),
     db.repository.count({
       where: {
-        employee: { companyId }
+        companyId
       }
     }),
     db.skillRecord.count({
@@ -206,15 +206,16 @@ async function syncEmployeeContributions(employeeId: string, logger: any) {
         }
       })
     } else {
-      await db.repository.create({
+      const newRepo = await db.repository.create({
         data: {
-          employeeId: employeeId,
+          companyId: employee.companyId,
           githubRepoId: String(repo.id),
           name: repo.name,
           fullName: repo.full_name,
           description: repo.description,
           homepage: repo.homepage,
           defaultBranch: repo.default_branch || 'main',
+          githubCreatedAt: repo.created_at ? new Date(repo.created_at) : new Date(),
           primaryLanguage: repo.language,
           languages: {},
           stars: repo.stargazers_count || 0,
@@ -224,10 +225,19 @@ async function syncEmployeeContributions(employeeId: string, logger: any) {
           openIssues: repo.open_issues_count || 0,
           isPrivate: repo.private,
           isFork: repo.fork || false,
-          createdAt: repo.created_at ? new Date(repo.created_at) : new Date(),
           pushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null
         }
       })
+
+      // Create employee-repository relationship
+      await db.employeeRepository.create({
+        data: {
+          employeeId: employeeId,
+          repositoryId: newRepo.id,
+          isContributor: true
+        }
+      })
+
       savedRepos++
     }
   }
@@ -240,7 +250,7 @@ async function syncEmployeeContributions(employeeId: string, logger: any) {
 
   // Get total repositories and skill count
   const [totalRepositories, skillCount] = await Promise.all([
-    db.repository.count({ where: { employeeId } }),
+    db.employeeRepository.count({ where: { employeeId } }),
     db.skillRecord.count({ where: { employeeId } })
   ])
 

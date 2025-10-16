@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get repository count
-    const repositoryCount = await db.repository.count({
+    // Get repository count (via employee-repository junction)
+    const repositoryCount = await db.employeeRepository.count({
       where: { employeeId: employee.id }
     })
 

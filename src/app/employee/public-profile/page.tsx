@@ -32,7 +32,7 @@ export default async function PublicProfilePage() {
   const [
     skillRecords,
     certificates,
-    repositories,
+    employeeRepos,
     totalCommits,
     githubConnection
   ] = await Promise.all([
@@ -49,23 +49,34 @@ export default async function PublicProfilePage() {
       orderBy: { issueDate: 'desc' },
       take: 5
     }),
-    db.repository.findMany({
+    db.employeeRepository.findMany({
       where: { employeeId: employee.id },
       include: {
-        _count: { select: { commits: true } }
+        repository: {
+          include: {
+            _count: { select: { commits: true } }
+          }
+        }
       },
-      orderBy: { stars: 'desc' },
+      orderBy: {
+        repository: {
+          stars: 'desc'
+        }
+      },
       take: 6
     }),
     db.commit.count({
       where: {
-        repository: { employeeId: employee.id }
+        authorEmail: employee.email
       }
     }),
     db.gitHubConnection.findUnique({
       where: { employeeId: employee.id }
     })
   ])
+
+  // Extract repositories from employeeRepos
+  const repositories = employeeRepos.map(er => er.repository)
 
   const profileUrl = `${process.env.APP_URL || 'http://localhost:3000'}/profile/${employee.id}`
 

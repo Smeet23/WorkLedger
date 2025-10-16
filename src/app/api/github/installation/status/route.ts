@@ -95,9 +95,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       // Synced repositories
       db.repository.count({
         where: {
-          employee: {
-            companyId: companyId
-          }
+          companyId: companyId
         }
       }),
 
@@ -132,6 +130,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
         accountId: installation.accountId.toString(),
         accountType: installation.accountType,
         repositorySelection: installation.repositorySelection,
+        permissions: installation.permissions || {},
+        events: installation.events || [],
         isActive: installation.isActive,
         installedAt: installation.installedAt,
         updatedAt: installation.updatedAt

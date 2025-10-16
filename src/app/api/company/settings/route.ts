@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import { ApiResponse } from '@/lib/api-response'
+import { createApiResponse } from '@/lib/api-response'
+
+const apiResponse = createApiResponse()
 
 const updateSettingsSchema = z.object({
   companyId: z.string(),
@@ -26,11 +28,11 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession()
 
     if (!session?.user) {
-      return ApiResponse.unauthorized('You must be logged in')
+      return apiResponse.unauthorized('You must be logged in')
     }
 
     if (session.user.role !== 'company_admin') {
-      return ApiResponse.forbidden('Only company administrators can update settings')
+      return apiResponse.forbidden('Only company administrators can update settings')
     }
 
     const body = await request.json()
@@ -45,7 +47,7 @@ export async function PUT(request: NextRequest) {
     })
 
     if (!employee) {
-      return ApiResponse.forbidden('You do not have permission to update this company')
+      return apiResponse.forbidden('You do not have permission to update this company')
     }
 
     // Update company profile if provided
@@ -89,14 +91,14 @@ export async function PUT(request: NextRequest) {
       }
     })
 
-    return ApiResponse.success(settings)
+    return apiResponse.success(settings)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return ApiResponse.badRequest('Invalid request data', error.errors)
+      return apiResponse.badRequest('Invalid request data', error.errors)
     }
 
     console.error('Settings update error:', error)
-    return ApiResponse.error('Failed to update settings')
+    return apiResponse.error('Failed to update settings')
   }
 }
 
@@ -105,7 +107,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession()
 
     if (!session?.user) {
-      return ApiResponse.unauthorized('You must be logged in')
+      return apiResponse.unauthorized('You must be logged in')
     }
 
     // Get company for the user
@@ -123,12 +125,12 @@ export async function GET(request: NextRequest) {
     })
 
     if (!employee?.company) {
-      return ApiResponse.notFound('Company not found')
+      return apiResponse.notFound('Company not found')
     }
 
-    return ApiResponse.success(employee.company.settings)
+    return apiResponse.success(employee.company.settings)
   } catch (error) {
     console.error('Settings fetch error:', error)
-    return ApiResponse.error('Failed to fetch settings')
+    return apiResponse.error('Failed to fetch settings')
   }
 }

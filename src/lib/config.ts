@@ -18,9 +18,14 @@ const envSchema = z.object({
   // Encryption
   ENCRYPTION_SECRET: z.string().min(32),
 
-  // GitHub Integration
+  // GitHub OAuth (for individual employees)
   GITHUB_CLIENT_ID: z.string().min(1),
   GITHUB_CLIENT_SECRET: z.string().min(1),
+
+  // GitHub App (for organization access)
+  GITHUB_APP_ID: z.string().min(1),
+  GITHUB_PRIVATE_KEY: z.string().min(1),
+  GITHUB_WEBHOOK_SECRET: z.string().optional(),
 
   // GitLab Integration (optional)
   GITLAB_CLIENT_ID: z.string().optional(),
@@ -138,17 +143,20 @@ export const skillConfig = {
 export const githubConfig = {
   // GitHub App configuration (for organizations)
   app: {
-    id: process.env.GITHUB_APP_ID || undefined,
-    privateKey: process.env.GITHUB_APP_PRIVATE_KEY || undefined,
-    clientId: process.env.GITHUB_APP_CLIENT_ID || undefined,
-    clientSecret: process.env.GITHUB_APP_CLIENT_SECRET || undefined,
-    webhookSecret: process.env.GITHUB_WEBHOOK_SECRET || undefined,
+    id: env.GITHUB_APP_ID,
+    // Replace literal \n with actual newlines in private key
+    privateKey: env.GITHUB_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    // Note: OAuth uses GITHUB_CLIENT_ID, App uses app-specific client ID from GitHub
+    clientId: env.GITHUB_CLIENT_ID, // Using OAuth client for now
+    clientSecret: env.GITHUB_CLIENT_SECRET,
+    webhookSecret: env.GITHUB_WEBHOOK_SECRET,
+    appName: process.env.NEXT_PUBLIC_GITHUB_APP_NAME || 'workledger-skills',
   },
 
-  // OAuth configuration (for individual employees)
+  // OAuth configuration (for individual employees - optional feature)
   oauth: {
-    clientId: process.env.GITHUB_CLIENT_ID || '',
-    clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+    clientId: env.GITHUB_CLIENT_ID,
+    clientSecret: env.GITHUB_CLIENT_SECRET,
     scope: 'repo user:email read:org',
     redirectPath: '/api/github/callback',
   },

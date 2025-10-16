@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date()
           },
           create: {
-            employeeId: employee.id,
+            companyId: employee.companyId,
             githubRepoId: String(repo.id),
             name: repo.name,
             fullName: repo.full_name,
@@ -138,9 +138,26 @@ export async function POST(request: NextRequest) {
             primaryLanguage: repo.language,
             languages,
             frameworks,
-            createdAt: repo.created_at ? new Date(repo.created_at) : new Date(),
+            githubCreatedAt: repo.created_at ? new Date(repo.created_at) : new Date(),
             pushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null,
             lastActivityAt: repo.updated_at ? new Date(repo.updated_at) : new Date()
+          }
+        })
+
+        // Create or update employee-repository relationship
+        await db.employeeRepository.upsert({
+          where: {
+            employeeId_repositoryId: {
+              employeeId: employee.id,
+              repositoryId: savedRepo.id
+            }
+          },
+          update: {
+            lastActivityAt: new Date()
+          },
+          create: {
+            employeeId: employee.id,
+            repositoryId: savedRepo.id
           }
         })
 
@@ -324,10 +341,10 @@ export async function POST(request: NextRequest) {
 
     // Get updated counts
     const [totalRepos, totalCommits, totalSkills] = await Promise.all([
-      db.repository.count({ where: { employeeId: employee.id } }),
+      db.employeeRepository.count({ where: { employeeId: employee.id } }),
       db.commit.count({
         where: {
-          repository: { employeeId: employee.id }
+          repository: { companyId: employee.companyId }
         }
       }),
       db.skillRecord.count({ where: { employeeId: employee.id } })

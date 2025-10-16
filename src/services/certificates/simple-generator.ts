@@ -62,7 +62,7 @@ export class SimpleCertificateGenerator {
             ]
           }
         },
-        repositories: true
+        employeeRepositories: true
       }
     })
 
@@ -99,7 +99,7 @@ export class SimpleCertificateGenerator {
       },
       stats: {
         totalSkills: employee.skillRecords.length,
-        totalRepositories: employee.repositories.length,
+        totalRepositories: employee.employeeRepositories.length,
         primaryLanguages: Array.from(new Set(employee.skillRecords
           .filter(r => r.skill.category === 'Programming Language')
           .map(r => r.skill.name)

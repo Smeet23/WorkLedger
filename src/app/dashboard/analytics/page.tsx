@@ -103,11 +103,19 @@ export default async function CompanyDashboard() {
       }
     }),
     db.repository.findMany({
-      where: { employee: { companyId: company.id } },
+      where: { companyId: company.id },
       take: 10,
       orderBy: { updatedAt: 'desc' },
       include: {
-        employee: true,
+        employeeRepositories: {
+          take: 1,
+          orderBy: {
+            commitCount: 'desc'
+          },
+          include: {
+            employee: true
+          }
+        },
         _count: {
           select: {
             commits: true
@@ -393,9 +401,11 @@ export default async function CompanyDashboard() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500">
-                          by {repo.employee.firstName} {repo.employee.lastName}
-                        </p>
+                        {repo.employeeRepositories[0] && (
+                          <p className="text-xs text-gray-500">
+                            by {repo.employeeRepositories[0].employee.firstName} {repo.employeeRepositories[0].employee.lastName}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </Link>

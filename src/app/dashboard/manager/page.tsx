@@ -51,7 +51,7 @@ async function getTeamAnalytics(companyId: string) {
         githubConnection: true,
         _count: {
           select: {
-            repositories: true,
+            employeeRepositories: true,
             certificates: true,
             skillRecords: true
           }
@@ -62,7 +62,7 @@ async function getTeamAnalytics(companyId: string) {
     // Today's activities
     db.commit.count({
       where: {
-        repository: { employee: { companyId } },
+        repository: { companyId },
         authorDate: { gte: todayStart }
       }
     }),
@@ -70,7 +70,7 @@ async function getTeamAnalytics(companyId: string) {
     // Week's activities
     db.commit.count({
       where: {
-        repository: { employee: { companyId } },
+        repository: { companyId },
         authorDate: { gte: weekAgo }
       }
     }),
@@ -78,7 +78,7 @@ async function getTeamAnalytics(companyId: string) {
     // Active work items (simplified - would integrate with Jira)
     db.repository.count({
       where: {
-        employee: { companyId },
+        companyId,
         pushedAt: { gte: weekAgo }
       }
     }),
@@ -89,11 +89,17 @@ async function getTeamAnalytics(companyId: string) {
     // Recent commits for activity feed
     db.commit.findMany({
       where: {
-        repository: { employee: { companyId } }
+        repository: { companyId }
       },
       include: {
         repository: {
-          include: { employee: true }
+          include: {
+            employeeRepositories: {
+              take: 1,
+              orderBy: { commitCount: 'desc' },
+              include: { employee: true }
+            }
+          }
         }
       },
       orderBy: { authorDate: 'desc' },
@@ -120,8 +126,8 @@ async function getTeamAnalytics(companyId: string) {
   // Identify top performers and those needing attention
   const employeeMetrics = employees.map(emp => ({
     ...emp,
-    score: (emp._count.repositories * 10) + (emp._count.skillRecords * 5) + (emp._count.certificates * 3),
-    lastActive: recentCommits.find(c => c.repository.employee.id === emp.id)?.authorDate
+    score: (emp._count.employeeRepositories * 10) + (emp._count.skillRecords * 5) + (emp._count.certificates * 3),
+    lastActive: recentCommits.find(c => c.authorEmail === emp.email)?.authorDate
   })).sort((a, b) => b.score - a.score)
 
   const topPerformers = employeeMetrics.slice(0, 3)
@@ -325,7 +331,7 @@ export default async function ManagerDashboard() {
                         <div className={`w-2 h-2 rounded-full mt-2 ${idx === 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                         <div className="flex-1 space-y-1">
                           <p className="text-sm">
-                            <span className="font-medium">{commit.repository.employee.firstName}</span>
+                            <span className="font-medium">{commit.authorName}</span>
                             {' committed to '}
                             <span className="font-mono text-xs bg-gray-100 px-1 rounded">{commit.repository.name}</span>
                           </p>
@@ -457,7 +463,7 @@ export default async function ManagerDashboard() {
                           <td className="py-3">
                             <div className="flex items-center">
                               <GitCommit className="w-3 h-3 mr-1 text-gray-400" />
-                              <span className="text-sm">{emp._count.repositories}</span>
+                              <span className="text-sm">{emp._count.employeeRepositories}</span>
                             </div>
                           </td>
                           <td className="py-3">

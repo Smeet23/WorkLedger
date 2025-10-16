@@ -6,7 +6,7 @@ import { createLogger } from './logger'
 // Redis connection
 const redis = new Redis(config.env.REDIS_URL || 'redis://localhost:6379', {
   maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
+  lazyConnect: true,
 })
 
 // Job types
@@ -176,7 +176,7 @@ class JobProcessor {
       })
 
       if (employee?.githubUsername) {
-        await discoveryService.generateEmployeeSkillsFromOrgData(employeeId, employee.githubUsername)
+        await discoveryService.generateSkillsForDiscoveredEmployees(employee.companyId)
       }
 
       jobLogger.info('GitHub employee sync completed', {
@@ -356,18 +356,12 @@ class JobProcessor {
 
       const { sendEmail } = await import('@/lib/email')
 
-      if (template && templateData) {
-        // Use template rendering if available
+      const recipients = Array.isArray(to) ? to : [to]
+      
+      for (const recipient of recipients) {
+        // Send email with HTML content
         await sendEmail({
-          to,
-          subject,
-          template,
-          templateData
-        })
-      } else {
-        // Send raw HTML
-        await sendEmail({
-          to,
+          to: recipient,
           subject,
           html
         })
@@ -448,7 +442,7 @@ class JobProcessor {
         case 'old_audit_logs':
           const oldAuditLogs = await db.auditLog.deleteMany({
             where: {
-              createdAt: { lt: beforeDate }
+              timestamp: { lt: beforeDate }
             }
           })
           deletedCount = oldAuditLogs.count
@@ -665,7 +659,7 @@ export const jobManager = new JobManager()
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  logger.info('Shutting down job queues...')
+  console.log('Shutting down job queues...')
   await Promise.all([
     githubQueue.close(),
     gitlabQueue.close(),

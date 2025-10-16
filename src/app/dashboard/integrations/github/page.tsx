@@ -25,6 +25,13 @@ export default function GitHubIntegrationPage() {
 
   useEffect(() => {
     fetchInstallationStatus()
+
+    // Check if user just completed installation
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('installed') === 'true') {
+      // Clear the URL parameter
+      window.history.replaceState({}, '', '/dashboard/integrations/github')
+    }
   }, [])
 
   const fetchInstallationStatus = async () => {
@@ -44,13 +51,10 @@ export default function GitHubIntegrationPage() {
   }
 
   const initiateInstallation = () => {
-    // Generate state token for security
-    const state = Math.random().toString(36).substring(7)
-    sessionStorage.setItem('github_install_state', state)
-
     // Redirect to GitHub App installation
-    const appName = process.env.NEXT_PUBLIC_GITHUB_APP_NAME || 'workledger-skills'
-    window.location.href = `https://github.com/apps/${appName}/installations/new?state=${state}`
+    // The callback will be handled by the Setup URL configured in GitHub App settings
+    const appName = process.env.NEXT_PUBLIC_GITHUB_APP_NAME || 'workledger'
+    window.location.href = `https://github.com/apps/${appName}/installations/new`
   }
 
   const runAutoDiscovery = async () => {

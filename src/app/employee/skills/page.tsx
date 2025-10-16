@@ -63,9 +63,7 @@ export default async function SkillProgressPage() {
   // Get recent commits to show skill activity
   const recentActivity = await db.commit.findMany({
     where: {
-      repository: {
-        employeeId: userInfo.employee.id
-      }
+      authorEmail: userInfo.employee.email
     },
     orderBy: { authorDate: 'desc' },
     take: 10,

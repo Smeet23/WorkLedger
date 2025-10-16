@@ -35,22 +35,28 @@ export default async function RepositoryDetailPage({ params, searchParams }: Pag
     )
   }
 
-  // Fetch repository with commit count
-  const repository = await db.repository.findFirst({
+  // Fetch repository via employee repository relationship
+  const employeeRepo = await db.employeeRepository.findFirst({
     where: {
-      id: params.id,
+      repositoryId: params.id,
       employeeId: userInfo.employee.id
     },
     include: {
-      _count: {
-        select: { commits: true }
+      repository: {
+        include: {
+          _count: {
+            select: { commits: true }
+          }
+        }
       }
     }
   })
 
-  if (!repository) {
+  if (!employeeRepo) {
     notFound()
   }
+
+  const repository = employeeRepo.repository
 
   // Parse pagination
   const currentPage = parseInt(searchParams.page || '1')

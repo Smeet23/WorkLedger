@@ -27,15 +27,26 @@ export default async function RepositoriesPage() {
   }
 
   // Fetch all repositories with commit counts
-  const repositories = await db.repository.findMany({
+  const employeeRepos = await db.employeeRepository.findMany({
     where: { employeeId: userInfo.employee.id },
-    orderBy: { pushedAt: 'desc' },
     include: {
-      _count: {
-        select: { commits: true }
+      repository: {
+        include: {
+          _count: {
+            select: { commits: true }
+          }
+        }
+      }
+    },
+    orderBy: {
+      repository: {
+        pushedAt: 'desc'
       }
     }
   })
+
+  // Extract repositories from employeeRepos
+  const repositories = employeeRepos.map(er => er.repository)
 
   // Get GitHub connection status
   const githubConnection = await db.gitHubConnection.findUnique({
@@ -45,7 +56,7 @@ export default async function RepositoriesPage() {
   // Get total commit count from database
   const totalCommits = await db.commit.count({
     where: {
-      repository: { employeeId: userInfo.employee.id }
+      authorEmail: userInfo.employee.email
     }
   })
 

@@ -64,7 +64,7 @@ export default async function EmployeePortal() {
   }
 
   // Fetch real data for the employee
-  const [skillRecords, certificates, repositories, totalCommitCount, githubConnection] = await Promise.all([
+  const [skillRecords, certificates, employeeRepos, totalCommitCount, githubConnection] = await Promise.all([
     db.skillRecord.findMany({
       where: { employeeId: employee.id },
       include: { skill: true },
@@ -74,15 +74,19 @@ export default async function EmployeePortal() {
       where: { employeeId: employee.id },
       orderBy: { issueDate: 'desc' }
     }),
-    db.repository.findMany({
+    db.employeeRepository.findMany({
       where: { employeeId: employee.id },
       include: {
-        activities: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        },
-        _count: {
-          select: { commits: true }
+        repository: {
+          include: {
+            activities: {
+              orderBy: { createdAt: 'desc' },
+              take: 1
+            },
+            _count: {
+              select: { commits: true }
+            }
+          }
         }
       },
       orderBy: { lastActivityAt: 'desc' },
@@ -90,13 +94,16 @@ export default async function EmployeePortal() {
     }),
     db.commit.count({
       where: {
-        repository: { employeeId: employee.id }
+        authorEmail: employee.email
       }
     }),
     db.gitHubConnection.findUnique({
       where: { employeeId: employee.id }
     })
   ])
+
+  // Extract repositories from employeeRepos
+  const repositories = employeeRepos.map(er => er.repository)
 
   const skillCount = skillRecords.length
   const certificateCount = certificates.length

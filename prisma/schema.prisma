@@ -73,6 +73,7 @@ model Company {
   integrations Integration[]
   auditLogs   AuditLog[]
   invitations Invitation[]
+  repositories Repository[]
   githubInstallations GitHubInstallation[]
   githubOrganizationMembers GitHubOrganizationMember[]
   githubIntegrations GitHubIntegration[]
@@ -153,7 +154,7 @@ model Employee {
   skillRecords    SkillRecord[]
   activities      GitHubActivity[]
   githubConnection GitHubConnection?
-  repositories    Repository[]
+  employeeRepositories EmployeeRepository[]
   skillEvolutions SkillEvolution[]
   githubOrganizationMembers GitHubOrganizationMember[]
   githubTokenAudits GitHubTokenAudit[]
@@ -430,12 +431,13 @@ model GitHubConnection {
   // GitHub OAuth Data
   githubUserId    String   @unique
   githubUsername  String
-  accessToken     String   // Encrypted
-  refreshToken    String?  // Encrypted
+  encryptedAccessToken  String?  // Encrypted (null for auto-discovered employees)
+  encryptedRefreshToken String?  // Encrypted
   scope          String?
 
   // Connection Status
   isActive        Boolean  @default(true)
+  isAutoDiscovered Boolean @default(false)
   lastSync        DateTime?
 
   // Metadata
@@ -445,11 +447,11 @@ model GitHubConnection {
   @@map("github_connections")
 }
 
-// Repository Tracking
+// Repository Tracking (Company-level)
 model Repository {
   id              String   @id @default(cuid())
-  employeeId      String
-  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   // Repository Info
   githubRepoId    String   @unique
@@ -462,7 +464,7 @@ model Repository {
   description     String?
   homepage        String?
   defaultBranch   String?
-  createdAt       DateTime
+  githubCreatedAt DateTime
   pushedAt        DateTime?
 
   // Repository Stats
@@ -474,7 +476,7 @@ model Repository {
 
   // Language Data
   primaryLanguage String?
-  languages       Json     // {language: percentage}
+  languages       Json     @default("{}")  // {language: percentage}
 
   // Detected Frameworks
   frameworks      Json?    // ["react", "nextjs", etc]
@@ -484,12 +486,47 @@ model Repository {
   totalCommits    Int      @default(0)
 
   // Relationships
+  employeeRepositories EmployeeRepository[]
   activities      RepositoryActivity[]
   commits         Commit[]
 
-  updatedAt       DateTime @default(now()) @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@index([companyId])
   @@map("repositories")
+}
+
+// Employee Repository Contributions (Junction Table)
+model EmployeeRepository {
+  id              String     @id @default(cuid())
+  employeeId      String
+  employee        Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  repositoryId    String
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  // Contribution Metrics
+  commitCount     Int        @default(0)
+  linesAdded      Int        @default(0)
+  linesDeleted    Int        @default(0)
+  pullRequests    Int        @default(0)
+
+  // Activity Tracking
+  firstCommitAt   DateTime?
+  lastCommitAt    DateTime?
+  lastActivityAt  DateTime?
+
+  // Role in repository
+  isContributor   Boolean    @default(true)
+  isOwner         Boolean    @default(false)
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([employeeId, repositoryId])
+  @@index([employeeId])
+  @@index([repositoryId])
+  @@map("employee_repositories")
 }
 
 // Repository Activity Tracking

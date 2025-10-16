@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
 
     if (employee.githubConnection) {
       console.log('Connection Active:', employee.githubConnection.isActive)
-      console.log('Connection Created:', employee.githubConnection.createdAt)
-      console.log('Has Access Token:', !!employee.githubConnection.accessToken)
+      console.log('Connection Created:', employee.githubConnection.connectedAt)
+      console.log('Has Access Token:', !!employee.githubConnection.encryptedAccessToken)
     }
 
     // Try to get connection

@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
           include: { skill: true }
         },
         certificates: true,
-        repositories: true,
+        employeeRepositories: true,
         _count: {
           select: {
             skillRecords: true,
             certificates: true,
-            repositories: true
+            employeeRepositories: true
           }
         }
       }
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         startDate: emp.startDate,
         skillCount: emp._count.skillRecords,
         certificateCount: emp._count.certificates,
-        repositoryCount: emp._count.repositories
+        repositoryCount: emp._count.employeeRepositories
       })),
       total: employees.length
     })

@@ -1,8 +1,8 @@
 import { db } from '@/lib/db'
 import { loggers } from '@/lib/logger'
-import { QueueService } from '@/lib/queue'
+import { jobManager } from '@/lib/queue'
 
-const logger = loggers.github.webhook
+const logger = loggers.external('github')
 
 export interface WebhookEvent {
   id: string
@@ -20,10 +20,8 @@ export interface WebhookEvent {
 }
 
 export class WebhookProcessor {
-  private queueService: QueueService
-
   constructor() {
-    this.queueService = new QueueService()
+    // No initialization needed for jobManager
   }
 
   async processWebhook(event: WebhookEvent): Promise<void> {
@@ -112,10 +110,10 @@ export class WebhookProcessor {
         })
 
         // Queue automatic discovery
-        await this.queueService.addJob('github_discovery', {
+        await jobManager.queueGitHubOrganizationSync({
           companyId: company.id,
-          installationId: installation.id,
-          trigger: 'installation'
+          adminId: undefined,
+          fullSync: false
         })
       }
     } else if (action === 'deleted' || action === 'suspend') {
@@ -141,27 +139,12 @@ export class WebhookProcessor {
 
     if (!githubInstallation) return
 
-    // Queue commit analysis
-    await this.queueService.addJob('analyze_commits', {
-      companyId: githubInstallation.companyId,
-      repository: {
-        id: repository.id,
-        name: repository.name,
-        fullName: repository.full_name
-      },
-      commits: commits.map((c: any) => ({
-        sha: c.id,
-        message: c.message,
-        author: c.author,
-        timestamp: c.timestamp,
-        added: c.added,
-        modified: c.modified,
-        removed: c.removed
-      })),
-      pusher: {
-        name: pusher.name,
-        email: pusher.email
-      }
+    // Queue commit analysis - this would need a specific job type for commit analysis
+    // For now, we'll queue a webhook processing job
+    await jobManager.queueWebhookProcessing({
+      webhookId: event.id,
+      eventType: 'push',
+      payload: event.payload
     })
   }
 
@@ -177,26 +160,10 @@ export class WebhookProcessor {
     if (!githubInstallation) return
 
     // Queue PR analysis for skill detection
-    await this.queueService.addJob('analyze_pull_request', {
-      companyId: githubInstallation.companyId,
-      action,
-      pullRequest: {
-        id: pull_request.id,
-        number: pull_request.number,
-        title: pull_request.title,
-        user: pull_request.user.login,
-        merged: pull_request.merged,
-        additions: pull_request.additions,
-        deletions: pull_request.deletions,
-        changedFiles: pull_request.changed_files,
-        createdAt: pull_request.created_at,
-        mergedAt: pull_request.merged_at
-      },
-      repository: {
-        id: repository.id,
-        name: repository.name,
-        fullName: repository.full_name
-      }
+    await jobManager.queueWebhookProcessing({
+      webhookId: event.id,
+      eventType: 'pull_request',
+      payload: event.payload
     })
   }
 
@@ -213,14 +180,10 @@ export class WebhookProcessor {
 
     if (action === 'created' || action === 'unarchived') {
       // Add repository to tracking
-      await this.queueService.addJob('sync_repository', {
-        companyId: githubInstallation.companyId,
-        repository: {
-          id: repository.id,
-          name: repository.name,
-          fullName: repository.full_name,
-          private: repository.private
-        }
+      await jobManager.queueWebhookProcessing({
+        webhookId: event.id,
+        eventType: 'repository',
+        payload: event.payload
       })
     }
   }
@@ -237,10 +200,10 @@ export class WebhookProcessor {
     if (!githubInstallation) return
 
     // Re-run discovery to pick up new members
-    await this.queueService.addJob('github_discovery', {
+    await jobManager.queueGitHubOrganizationSync({
       companyId: githubInstallation.companyId,
-      installationId: installation.id,
-      trigger: 'organization_change'
+      adminId: undefined,
+      fullSync: false
     })
   }
 
@@ -249,7 +212,7 @@ export class WebhookProcessor {
     const pendingInstall = await db.integration.findFirst({
       where: {
         type: 'GITHUB',
-        metadata: {
+        config: {
           path: ['pendingInstallationId'],
           equals: installation.id
         }

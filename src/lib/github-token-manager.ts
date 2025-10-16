@@ -30,7 +30,8 @@ export class GitHubTokenManager {
   async storeCompanyTokens(
     companyId: string,
     tokenData: GitHubTokenData,
-    organizationLogin?: string
+    organizationLogin?: string,
+    installationId?: bigint
   ): Promise<void> {
     try {
       // Encrypt sensitive token data
@@ -50,7 +51,8 @@ export class GitHubTokenManager {
           expiresAt: tokenData.expiresAt,
           scope: tokenData.scope,
           organizationLogin,
-          metadata: tokenData.metadata,
+          installationId,
+          metadata: (tokenData.metadata || {}) as any,
           isActive: true,
           updatedAt: new Date()
         },
@@ -62,7 +64,8 @@ export class GitHubTokenManager {
           expiresAt: tokenData.expiresAt,
           scope: tokenData.scope,
           organizationLogin,
-          metadata: tokenData.metadata,
+          installationId,
+          metadata: (tokenData.metadata || {}) as any,
           isActive: true
         }
       })
@@ -96,20 +99,19 @@ export class GitHubTokenManager {
         update: {
           encryptedAccessToken,
           encryptedRefreshToken,
-          expiresAt: tokenData.expiresAt,
           scope: tokenData.scope,
-          githubUsername,
+          githubUsername: githubUsername || '',
           isActive: true,
           lastSync: new Date(),
           updatedAt: new Date()
         },
         create: {
           employeeId,
+          githubUserId: '',  // Will be updated later
+          githubUsername: githubUsername || '',
           encryptedAccessToken,
           encryptedRefreshToken,
-          expiresAt: tokenData.expiresAt,
           scope: tokenData.scope,
-          githubUsername,
           isActive: true
         }
       })
@@ -195,23 +197,8 @@ export class GitHubTokenManager {
         return null
       }
 
-      // Check if token is expired
-      if (connection.expiresAt && connection.expiresAt < new Date()) {
-        this.logger.warn('Employee GitHub token has expired', {
-          employeeId,
-          expiresAt: connection.expiresAt
-        })
-
-        // Try to refresh if possible
-        if (connection.encryptedRefreshToken) {
-          return await this.refreshEmployeeToken(employeeId)
-        }
-
-        return null
-      }
-
       // Decrypt tokens
-      const accessToken = decrypt(connection.encryptedAccessToken)
+      const accessToken = decrypt(connection.encryptedAccessToken!)
       const refreshToken = connection.encryptedRefreshToken
         ? decrypt(connection.encryptedRefreshToken)
         : undefined
@@ -219,7 +206,7 @@ export class GitHubTokenManager {
       return {
         accessToken,
         refreshToken,
-        expiresAt: connection.expiresAt || undefined,
+        expiresAt: undefined,
         scope: connection.scope || undefined,
         tokenType: GitHubTokenType.OAUTH_ACCESS,
         metadata: {}
@@ -255,7 +242,7 @@ export class GitHubTokenManager {
 
       // For GitHub Apps, we need to generate new installation tokens
       if (tokenType === GitHubTokenType.APP_INSTALLATION) {
-        return await this.refreshAppInstallationToken(companyId, integration.installationId!)
+        return await this.refreshAppInstallationToken(companyId, Number(integration.installationId!))
       }
 
       // For OAuth tokens, use refresh token flow
@@ -323,7 +310,7 @@ export class GitHubTokenManager {
       })
 
       const installation = await app.getInstallationOctokit(installationId)
-      const { data: tokenData } = await installation.rest.apps.createInstallationAccessToken({
+      const { data: tokenData } = await installation.request('POST /app/installations/{installation_id}/access_tokens', {
         installation_id: installationId
       })
 
@@ -337,7 +324,7 @@ export class GitHubTokenManager {
         }
       }
 
-      await this.storeCompanyTokens(companyId, newTokenData)
+      await this.storeCompanyTokens(companyId, newTokenData, undefined, BigInt(installationId))
 
       this.logger.info('GitHub App installation token refreshed', { companyId, installationId })
       return newTokenData
@@ -394,8 +381,7 @@ export class GitHubTokenManager {
       await db.gitHubConnection.update({
         where: { employeeId },
         data: {
-          isActive: false,
-          disconnectedAt: new Date()
+          isActive: false
         }
       })
 

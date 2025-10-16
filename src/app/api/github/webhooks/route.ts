@@ -115,7 +115,7 @@ async function getCompanyIdFromInstallation(installationId?: number): Promise<st
 }
 
 async function processWebhook(event: string, payload: any, webhookId: string): Promise<void> {
-  const webhookLogger = createLogger({ webhookId, event })
+  const webhookLogger = logger.withContext({ webhookId, event })
 
   try {
     switch (event) {
@@ -259,9 +259,7 @@ async function handleInstallationRepositoriesEvent(payload: any): Promise<void> 
       await db.repository.deleteMany({
         where: {
           githubRepoId: String(repo.id),
-          employee: {
-            companyId
-          }
+          companyId
         }
       })
     }
@@ -284,9 +282,7 @@ async function handlePushEvent(payload: any): Promise<void> {
   await db.repository.updateMany({
     where: {
       githubRepoId: String(repository.id),
-      employee: {
-        companyId
-      }
+      companyId
     },
     data: {
       lastActivityAt: new Date(),
@@ -386,9 +382,7 @@ async function handleRepositoryEvent(payload: any): Promise<void> {
       await db.repository.deleteMany({
         where: {
           githubRepoId: String(repository.id),
-          employee: {
-            companyId
-          }
+          companyId
         }
       })
       break

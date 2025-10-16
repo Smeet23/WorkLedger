@@ -121,7 +121,7 @@ export function GitHubInstallationStatus({ installation, onRefresh }: GitHubInst
         <div className="mt-4">
           <h4 className="text-sm font-medium mb-2">Webhook Events</h4>
           <div className="flex flex-wrap gap-2">
-            {installation.events.map(event => (
+            {(installation.events || []).map(event => (
               <Badge key={event} variant="secondary" className="text-xs">
                 {event}
               </Badge>

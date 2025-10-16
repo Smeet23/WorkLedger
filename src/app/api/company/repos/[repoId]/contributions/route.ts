@@ -27,17 +27,18 @@ export async function GET(
       include: { company: true }
     })
 
-    // Get the repository with all commits and employee info
+    // Get the repository with all commits and company info
     const repository = await db.repository.findUnique({
       where: { id: params.repoId },
       include: {
-        employee: {
-          include: {
-            company: true
-          }
-        },
+        company: true,
         commits: {
           orderBy: { authorDate: 'desc' }
+        },
+        employeeRepositories: {
+          include: {
+            employee: true
+          }
         }
       }
     })
@@ -47,11 +48,11 @@ export async function GET(
     }
 
     // Check access permissions
-    const isCompanyAdmin = user.role === 'company_admin' && userEmployee?.company?.id === repository.employee.companyId
-    const isManager = userEmployee?.role === 'MANAGER' && userEmployee?.companyId === repository.employee.companyId
-    const isOwner = userEmployee?.id === repository.employeeId
+    const isCompanyAdmin = user.role === 'company_admin' && userEmployee?.company?.id === repository.companyId
+    const isManager = userEmployee?.role === 'MANAGER' && userEmployee?.companyId === repository.companyId
+    const isContributor = repository.employeeRepositories.some(er => er.employeeId === userEmployee?.id)
 
-    if (!isCompanyAdmin && !isManager && !isOwner) {
+    if (!isCompanyAdmin && !isManager && !isContributor) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
@@ -143,6 +144,19 @@ export async function GET(
         filesChanged: commit.filesChanged
       }))
 
+    // Get the main contributors (top contributor as "owner")
+    const topContributors = repository.employeeRepositories
+      .sort((a, b) => b.commitCount - a.commitCount)
+      .slice(0, 3)
+      .map(er => ({
+        id: er.employee.id,
+        name: `${er.employee.firstName} ${er.employee.lastName}`,
+        email: er.employee.email,
+        title: er.employee.title,
+        department: er.employee.department,
+        commitCount: er.commitCount
+      }))
+
     return NextResponse.json({
       repository: {
         id: repository.id,
@@ -151,24 +165,18 @@ export async function GET(
         description: repository.description,
         isPrivate: repository.isPrivate,
         htmlUrl: `https://github.com/${repository.fullName}`,
-        createdAt: repository.createdAt,
+        createdAt: repository.githubCreatedAt,
         updatedAt: repository.updatedAt,
         stars: repository.stars,
         forks: repository.forks,
         openIssues: repository.openIssues,
-        owner: {
-          id: repository.employee.id,
-          name: `${repository.employee.firstName} ${repository.employee.lastName}`,
-          email: repository.employee.email,
-          title: repository.employee.title,
-          department: repository.employee.department
-        }
+        topContributors
       },
       stats,
       contributors,
       activityData,
       recentCommits,
-      accessLevel: isCompanyAdmin ? 'admin' : (isManager ? 'manager' : 'owner')
+      accessLevel: isCompanyAdmin ? 'admin' : (isManager ? 'manager' : 'contributor')
     })
   } catch (error) {
     console.error('Failed to fetch repository contributions:', error)

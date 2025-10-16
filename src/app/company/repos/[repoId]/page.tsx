@@ -54,9 +54,10 @@ export default async function RepositoryContributions({ params }: PageProps) {
   const repository = await db.repository.findUnique({
     where: { id: params.repoId },
     include: {
-      employee: {
+      company: true,
+      employeeRepositories: {
         include: {
-          company: true
+          employee: true
         }
       },
       commits: {
@@ -81,12 +82,16 @@ export default async function RepositoryContributions({ params }: PageProps) {
   }
 
   // Check access permissions
-  const canAccess = isCompanyAdmin && userEmployee?.company?.id === repository.employee.companyId ||
-                    isManager && userEmployee?.companyId === repository.employee.companyId
+  const canAccess = isCompanyAdmin && userEmployee?.company?.id === repository.companyId ||
+                    isManager && userEmployee?.companyId === repository.companyId
 
   if (!canAccess) {
     redirect('/company')
   }
+
+  // Get the primary owner/contributor
+  const primaryOwner = repository.employeeRepositories.find(er => er.isOwner) ||
+                       repository.employeeRepositories[0]
 
   // Calculate contributor statistics
   const contributorMap = new Map<string, {
@@ -174,9 +179,11 @@ export default async function RepositoryContributions({ params }: PageProps) {
                   <Badge variant={repository.isPrivate ? "secondary" : "default"}>
                     {repository.isPrivate ? "Private" : "Public"}
                   </Badge>
-                  <span className="text-sm text-gray-500">
-                    Owner: {repository.employee.firstName} {repository.employee.lastName}
-                  </span>
+                  {primaryOwner && (
+                    <span className="text-sm text-gray-500">
+                      Owner: {primaryOwner.employee.firstName} {primaryOwner.employee.lastName}
+                    </span>
+                  )}
                   <a
                     href={`https://github.com/${repository.fullName}`}
                     target="_blank"

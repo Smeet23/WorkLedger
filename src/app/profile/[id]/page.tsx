@@ -27,17 +27,25 @@ export default async function PublicProfileViewPage({ params }: ProfilePageProps
         orderBy: { issueDate: 'desc' },
         take: 5
       },
-      repositories: {
-        include: {
-          _count: { select: { commits: true } }
+      employeeRepositories: {
+        take: 6,
+        orderBy: {
+          repository: {
+            stars: 'desc'
+          }
         },
-        orderBy: { stars: 'desc' },
-        take: 6
+        include: {
+          repository: {
+            include: {
+              _count: { select: { commits: true } }
+            }
+          }
+        }
       },
       githubConnection: true,
       _count: {
         select: {
-          repositories: true,
+          employeeRepositories: true,
           certificates: true
         }
       }
@@ -48,10 +56,13 @@ export default async function PublicProfileViewPage({ params }: ProfilePageProps
     notFound()
   }
 
+  // Extract repositories from employeeRepositories
+  const repositories = employee.employeeRepositories.map(er => er.repository)
+
   // Calculate total commits
   const totalCommits = await db.commit.count({
     where: {
-      repository: { employeeId: employee.id }
+      authorEmail: employee.email
     }
   })
 
@@ -167,7 +178,7 @@ export default async function PublicProfileViewPage({ params }: ProfilePageProps
                 <div className="text-sm text-gray-500">Commits</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{employee._count.repositories}</div>
+                <div className="text-3xl font-bold text-blue-600">{employee._count.employeeRepositories}</div>
                 <div className="text-sm text-gray-500">Repositories</div>
               </div>
               <div className="text-center">
@@ -265,9 +276,9 @@ export default async function PublicProfileViewPage({ params }: ProfilePageProps
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {employee.repositories.length > 0 ? (
+            {repositories.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {employee.repositories.map((repo) => (
+                {repositories.map((repo) => (
                   <div key={repo.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <h4 className="font-medium text-sm mb-1 flex items-center gap-2">
                       {repo.name}
