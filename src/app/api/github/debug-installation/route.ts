@@ -78,16 +78,16 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       } : null,
       integration: integration ? {
         id: integration.id,
-        organizationName: integration.organizationName,
-        hasAccessToken: !!integration.accessToken
+        organizationLogin: integration.organizationLogin,
+        hasAccessToken: !!integration.encryptedAccessToken
       } : null,
       connections: {
         count: connections.length,
         items: connections.map(c => ({
           employeeId: c.employeeId,
           githubUsername: c.githubUsername,
-          hasAccessToken: !!c.accessToken,
-          hasRefreshToken: !!c.refreshToken
+          hasAccessToken: !!c.encryptedAccessToken,
+          hasRefreshToken: !!c.encryptedRefreshToken
         }))
       },
       repositories: {

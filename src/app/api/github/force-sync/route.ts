@@ -47,7 +47,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     })
 
     if (!installation) {
-      return apiResponse.error('No GitHub App installation found', 404)
+      return apiResponse.notFound('GitHub App installation')
     }
 
     const installationId = Number(installation.installationId)
@@ -108,7 +108,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     })
 
     if (reposData.total_count === 0) {
-      return apiResponse.error('No repositories accessible to this installation. Please configure repository access in GitHub App settings.', 400)
+      return apiResponse.badRequest('No repositories accessible to this installation. Please configure repository access in GitHub App settings.')
     }
 
     // STEP 6: Save repositories to database
@@ -200,10 +200,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   } catch (error: any) {
     companyLogger.error('Force sync failed', error)
-    return apiResponse.error(
-      `Sync failed: ${error.message}`,
-      500,
-      { error: error.message, stack: error.stack }
-    )
+    return apiResponse.error(error, {
+      operation: 'force-sync',
+      companyId: companyId
+    })
   }
 })

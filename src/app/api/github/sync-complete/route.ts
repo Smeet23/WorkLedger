@@ -38,33 +38,24 @@ export async function POST(request: NextRequest) {
     const repoIds = new Set<number>() // Track unique repos by ID
 
     // 1. Fetch ALL accessible repositories (owned, member, collaborator, private)
+    // Now uses internal pagination - no need for manual loops
     console.log('Fetching all accessible repositories...')
-    let page = 1
-    let hasMore = true
+    const repos = await github.getAllAccessibleRepos()
 
-    while (hasMore) {
-      const repos = await github.getAllAccessibleRepos(page, 100)
-
-      // Add only unique repos
-      for (const repo of repos) {
-        if (!repoIds.has(repo.id)) {
-          repoIds.add(repo.id)
-          allRepos.push(repo)
-        }
+    // Add only unique repos
+    for (const repo of repos) {
+      if (!repoIds.has(repo.id)) {
+        repoIds.add(repo.id)
+        allRepos.push(repo)
       }
-
-      if (repos.length < 100) {
-        hasMore = false
-      } else {
-        page++
-      }
-
-      console.log(`Fetched page ${page - 1}: ${repos.length} repos (total: ${allRepos.length})`)
     }
 
+    console.log(`Fetched ${repos.length} accessible repos`)
+
     // 2. Also fetch contributed repositories (where user has merged PRs)
+    // Now uses internal pagination - no need for manual loops
     console.log('Fetching contributed repositories...')
-    const contributedRepos = await github.searchContributedRepos(connection.githubUsername, 1)
+    const contributedRepos = await github.searchContributedRepos(connection.githubUsername)
 
     for (const repo of contributedRepos) {
       if (!repoIds.has(repo.id)) {

@@ -187,8 +187,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     try {
       const { data: installationInfo } = await octokit.rest.apps.getAuthenticated()
       addStep('Test GitHub API (Get App)', true, {
-        appName: installationInfo.name,
-        appId: installationInfo.id
+        appName: installationInfo?.name || 'N/A',
+        appId: installationInfo?.id || 0
       })
     } catch (error: any) {
       addStep('Test GitHub API (Get App)', false, null, error)

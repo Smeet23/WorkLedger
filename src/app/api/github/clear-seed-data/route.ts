@@ -43,10 +43,7 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
     const seedRepos = await db.repository.findMany({
       where: {
         companyId: companyId,
-        OR: [
-          { githubRepoId: { startsWith: '12345' } },
-          { githubRepoId: { regex: '^\\d{8}$' } } // 8-digit fake IDs
-        ]
+        githubRepoId: { startsWith: '12345' }
       },
       include: {
         _count: {

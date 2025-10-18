@@ -1,36 +1,40 @@
 # GitHub App Configuration with Ngrok
 
+## ⚠️ IMPORTANT: APP_URL FIX APPLIED
+
+**Fixed Issue:** Removed leading space from APP_URL in `.env` file (this was causing redirect failures)
+
 ## Your Current Ngrok URL
 ```
-https://e1e30fa67ce5.ngrok-free.app
+https://bfbe47065779.ngrok-free.app
 ```
 
-**Last Updated:** October 15, 2025
+**Last Updated:** October 18, 2025
 
-## Update GitHub App Settings
+## 🔧 REQUIRED: Update GitHub App Settings
 
-Go to: https://github.com/settings/apps/workledger
+Go to: https://github.com/settings/apps/workledger-app
 
 ### 1. General Settings
 
 **Homepage URL:**
 ```
-https://e1e30fa67ce5.ngrok-free.app
+https://bfbe47065779.ngrok-free.app
 ```
 
 **Callback URL:**
 ```
-https://e1e30fa67ce5.ngrok-free.app/api/github/callback
+https://bfbe47065779.ngrok-free.app/api/github/callback
 ```
 
-**Setup URL:** (REQUIRED - This handles the installation callback)
+**Setup URL:** ⚠️ **CRITICAL - This MUST be set for redirects to work!**
 ```
-https://e1e30fa67ce5.ngrok-free.app/api/github/app/install
+https://bfbe47065779.ngrok-free.app/api/github/app/install
 ```
 
 **Webhook URL:**
 ```
-https://e1e30fa67ce5.ngrok-free.app/api/github/webhooks
+https://bfbe47065779.ngrok-free.app/api/github/webhooks
 ```
 
 **Webhook secret:** (already set)
@@ -80,24 +84,89 @@ https://e1e30fa67ce5.ngrok-free.app/api/github/webhooks
 
 ## Current Configuration Summary
 
-✅ GitHub App ID: 2116106
-✅ App Name: workledger (public link: https://github.com/apps/workledger)
+✅ GitHub App ID: 2122223
+✅ App Name: workledger-app (public link: https://github.com/apps/workledger-app)
 ✅ Internal App Name: workledger-skills
-✅ Ngrok URL: https://e1e30fa67ce5.ngrok-free.app
+✅ Ngrok URL: https://bfbe47065779.ngrok-free.app
 ✅ Webhook Secret: Configured
 ✅ Private Key: Configured in .env
+✅ APP_URL: Fixed (removed leading space)
 
 ## Installation URL
 
 Users/organizations can install the app at:
 ```
-https://github.com/apps/workledger/installations/new
+https://github.com/apps/workledger-app/installations/new
 ```
 
 Or use the install button in your WorkLedger dashboard.
 
-**Next Steps**:
-1. Update the GitHub App URLs in GitHub settings with the URLs above
-2. Save your changes in GitHub App settings
-3. Test the installation flow by visiting your dashboard
-4. Install the app to your organization or personal account
+---
+
+## 🐛 Bug Fix Summary (October 18, 2025)
+
+### Problem
+After installing the GitHub App, users were stuck on the GitHub settings page (`https://github.com/settings/installations/XXXXXX`) instead of being redirected back to the WorkLedger dashboard.
+
+### Root Causes Identified
+1. **Leading space in APP_URL** - The `.env` file had `APP_URL=" https://..."` with a leading space
+2. **Setup URL not configured** - GitHub App settings didn't have the Setup URL configured
+3. **Insufficient logging** - Hard to debug the callback flow
+
+### Fixes Applied
+1. ✅ **Fixed `.env` file** - Removed leading space from APP_URL (line 50)
+2. ✅ **Enhanced callback logging** - Added comprehensive logging to `/api/github/app/install/route.ts`
+3. ✅ **Improved error handling** - Better error messages and explicit 302 redirects
+4. ✅ **Added UI feedback** - Success/error alerts on the integration page
+
+### Required Action
+⚠️ **YOU MUST DO THIS NOW:**
+
+1. Go to: https://github.com/settings/apps/workledger-app
+2. Click "Edit"
+3. Scroll to "Setup URL (optional)"
+4. Enter: `https://bfbe47065779.ngrok-free.app/api/github/app/install`
+5. Click "Save changes"
+
+### Testing the Fix
+
+1. **Start your server:**
+   ```bash
+   npm run dev
+   ```
+
+2. **Log in** as company admin
+
+3. **Go to:** `/dashboard/integrations/github`
+
+4. **Click:** "Install GitHub App"
+
+5. **On GitHub:**
+   - Select organization
+   - Select repositories
+   - Click "Install"
+
+6. **Expected result:**
+   - ✅ Redirected back to WorkLedger
+   - ✅ Success alert shown
+   - ✅ Integration status displayed
+   - ✅ Stats updated
+
+### Debugging
+
+If you're still having issues, check the server logs for:
+```
+=== GITHUB APP INSTALLATION CALLBACK ===
+```
+
+This will show you exactly what's happening during the callback.
+
+---
+
+## Next Steps
+
+1. ✅ Update the GitHub App Setup URL (see above)
+2. ✅ Test the installation flow
+3. ✅ Verify the redirect works
+4. ✅ Check that repositories sync
+5. ✅ Verify employee discovery works

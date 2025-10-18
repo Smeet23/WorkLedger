@@ -39,13 +39,58 @@ export class EnhancedGitHubService {
    */
   async getCompanyClient(companyId: string): Promise<Octokit> {
     try {
-      const tokenData = await githubTokenManager.getCompanyTokens(
+      // First try to get existing tokens
+      let tokenData = await githubTokenManager.getCompanyTokens(
         companyId,
         GitHubTokenType.APP_INSTALLATION
       )
 
+      // If token is null (expired/missing), refresh it using the installation
       if (!tokenData) {
-        throw new AuthenticationError('No GitHub App installation found for company')
+        this.logger.info('Token expired or missing, refreshing from installation...', { companyId })
+
+        // Get installation ID from github_installations table
+        const installation = await db.gitHubInstallation.findFirst({
+          where: { companyId, isActive: true }
+        })
+
+        if (!installation) {
+          throw new AuthenticationError('No GitHub App installation found for company')
+        }
+
+        this.logger.info('Found installation, generating new token', {
+          companyId,
+          installationId: installation.installationId.toString()
+        })
+
+        // Generate new installation token
+        const installationOctokit = await this.app.getInstallationOctokit(Number(installation.installationId))
+        const { data: newToken } = await installationOctokit.request('POST /app/installations/{installation_id}/access_tokens', {
+          installation_id: Number(installation.installationId)
+        })
+
+        // Store the new token
+        tokenData = {
+          accessToken: newToken.token,
+          expiresAt: new Date(newToken.expires_at),
+          tokenType: GitHubTokenType.APP_INSTALLATION,
+          metadata: {
+            installationId: Number(installation.installationId),
+            permissions: newToken.permissions
+          }
+        }
+
+        await githubTokenManager.storeCompanyTokens(
+          companyId,
+          tokenData,
+          installation.accountLogin,
+          installation.installationId
+        )
+
+        this.logger.info('✅ Successfully refreshed GitHub App token', {
+          companyId,
+          expiresAt: tokenData.expiresAt
+        })
       }
 
       const octokit = new Octokit({
@@ -109,37 +154,62 @@ export class EnhancedGitHubService {
     try {
       const octokit = await this.getCompanyClient(companyId)
 
-      // Get all repositories accessible to the installation
-      const { data: installationRepos } = await octokit.rest.apps.listReposAccessibleToInstallation({
-        per_page: 100
-      })
+      // Get ALL repositories accessible to the installation (WITH PAGINATION)
+      companyLogger.info('Fetching ALL organization repositories with pagination...')
+      const allRepos = []
+      let page = 1
+      let hasMore = true
+
+      while (hasMore) {
+        const { data: installationRepos } = await octokit.rest.apps.listReposAccessibleToInstallation({
+          per_page: 100,
+          page
+        })
+
+        allRepos.push(...installationRepos.repositories)
+        companyLogger.info(`  Page ${page}: Found ${installationRepos.repositories.length} repos (total: ${allRepos.length})`)
+
+        // If we got less than 100, we've reached the end
+        if (installationRepos.repositories.length < 100) {
+          hasMore = false
+        } else {
+          page++
+        }
+      }
 
       companyLogger.info('Fetched organization repositories', {
-        totalRepositories: installationRepos.total_count
+        totalRepositories: allRepos.length
       })
 
       // Process each repository
-      for (const repo of installationRepos.repositories) {
+      for (const repo of allRepos) {
         try {
+          companyLogger.info(`Processing repository: ${repo.full_name}`)
+
           // Check if repository already exists
           const existingRepo = await db.repository.findUnique({
             where: { githubRepoId: String(repo.id) }
           })
 
+          companyLogger.info(`Existing repo check: ${existingRepo ? 'EXISTS' : 'NEW'}`, {
+            repoId: repo.id,
+            repoName: repo.full_name
+          })
+
           const repoData = {
             name: repo.name,
             fullName: repo.full_name,
-            description: repo.description,
-            homepage: repo.homepage,
-            defaultBranch: repo.default_branch,
-            isPrivate: repo.private,
-            isFork: repo.fork,
-            stars: repo.stargazers_count,
-            forks: repo.forks_count,
-            watchers: repo.watchers_count,
-            size: repo.size,
-            openIssues: repo.open_issues_count,
-            primaryLanguage: repo.language,
+            description: repo.description || null,
+            homepage: repo.homepage || null,
+            defaultBranch: repo.default_branch || 'main',
+            isPrivate: repo.private || false,
+            isFork: repo.fork || false,
+            stars: repo.stargazers_count || 0,
+            forks: repo.forks_count || 0,
+            watchers: repo.watchers_count || 0,
+            size: repo.size || 0,
+            openIssues: repo.open_issues_count || 0,
+            primaryLanguage: repo.language || null,
             githubCreatedAt: repo.created_at ? new Date(repo.created_at) : new Date(),
             pushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null,
             lastActivityAt: repo.updated_at ? new Date(repo.updated_at) : new Date(),
@@ -148,27 +218,25 @@ export class EnhancedGitHubService {
 
           if (existingRepo) {
             // Update existing repository
+            companyLogger.info(`Updating existing repository: ${repo.full_name}`)
             await db.repository.update({
               where: { id: existingRepo.id },
               data: repoData
             })
             updatedCount++
+            companyLogger.info(`✅ Updated repository: ${repo.full_name}`)
           } else {
-            // Find the company's employees to potentially link repositories
-            const companyEmployees = await db.employee.findMany({
-              where: { companyId }
-            })
-
-            // For now, we'll create unlinked repositories
-            // Later, we'll match them to employees based on contributions
+            // Create new repository
+            companyLogger.info(`Creating new repository: ${repo.full_name}`)
             await db.repository.create({
               data: {
                 githubRepoId: String(repo.id),
-                companyId, // Link to company instead of individual employee
+                companyId,
                 ...repoData
               }
             })
             newCount++
+            companyLogger.info(`✅ Created repository: ${repo.full_name}`)
           }
 
           // Fetch and store languages
@@ -183,6 +251,7 @@ export class EnhancedGitHubService {
               where: { githubRepoId: String(repo.id) },
               data: { languages }
             })
+            companyLogger.info(`✅ Updated languages for: ${repo.full_name}`)
           } catch (languageError) {
             companyLogger.warn('Failed to fetch languages for repository', {
               repository: repo.full_name,
@@ -191,20 +260,23 @@ export class EnhancedGitHubService {
           }
 
         } catch (repoError) {
-          companyLogger.error('Failed to process repository', repoError, {
-            repository: repo.full_name
+          companyLogger.error('❌ Failed to process repository', repoError, {
+            repository: repo.full_name,
+            errorMessage: repoError instanceof Error ? repoError.message : 'Unknown error',
+            errorStack: repoError instanceof Error ? repoError.stack : undefined
           })
+          // Continue with next repo instead of failing completely
         }
       }
 
       companyLogger.info('Organization repository sync completed', {
-        totalRepositories: installationRepos.total_count,
+        totalRepositories: allRepos.length,
         newRepositories: newCount,
         updatedRepositories: updatedCount
       })
 
       return {
-        repositories: installationRepos.total_count,
+        repositories: allRepos.length,
         newRepositories: newCount,
         updatedRepositories: updatedCount
       }

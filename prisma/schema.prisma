@@ -489,6 +489,7 @@ model Repository {
   employeeRepositories EmployeeRepository[]
   activities      RepositoryActivity[]
   commits         Commit[]
+  pullRequests    PullRequest[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -672,10 +673,65 @@ model Commit {
   parentShas      String[]   // Array of parent commit SHAs
 
   createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
+  @@unique([repositoryId, sha])
   @@index([repositoryId, authorDate])
   @@index([authorEmail])
   @@map("commits")
+}
+
+// Pull Request Tracking
+model PullRequest {
+  id              String     @id @default(cuid())
+  repositoryId    String
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  // PR Info
+  number          Int
+  title           String
+  body            String?    @db.Text
+  state           String     // open, closed, merged
+
+  // Author Info
+  authorUsername  String
+  authorEmail     String?
+
+  // PR Details
+  headBranch      String
+  baseBranch      String
+  isDraft         Boolean    @default(false)
+  isMerged        Boolean    @default(false)
+
+  // Metrics
+  additions       Int        @default(0)
+  deletions       Int        @default(0)
+  changedFiles    Int        @default(0)
+  commits         Int        @default(0)
+  comments        Int        @default(0)
+  reviewComments  Int        @default(0)
+
+  // Dates
+  createdAt       DateTime
+  updatedAt       DateTime
+  closedAt        DateTime?
+  mergedAt        DateTime?
+
+  // GitHub URLs
+  htmlUrl         String?
+  apiUrl          String?
+
+  // Additional data
+  labels          String[]   // Array of label names
+  assignees       String[]   // Array of assignee usernames
+  requestedReviewers String[] // Array of reviewer usernames
+  mergedBy        String?    // Username who merged
+
+  @@unique([repositoryId, number])
+  @@index([repositoryId, state])
+  @@index([repositoryId, createdAt])
+  @@index([authorUsername])
+  @@map("pull_requests")
 }
 
 // GitHub App Installation tracking

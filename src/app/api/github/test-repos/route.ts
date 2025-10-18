@@ -44,7 +44,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     })
 
     if (!installation) {
-      return apiResponse.error('No GitHub App installation found', 404)
+      return apiResponse.notFound('GitHub App installation')
     }
 
     companyLogger.info('Testing GitHub API connection', {
@@ -96,15 +96,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   } catch (error: any) {
     companyLogger.error('GitHub API test failed', error)
 
-    return apiResponse.error(
-      `GitHub API test failed: ${error.message}`,
-      500,
-      {
-        error: error.message,
-        stack: error.stack,
-        name: error.name,
-        status: error.status
-      }
-    )
+    return apiResponse.error(error, {
+      operation: 'test-repos',
+      companyId: companyId
+    })
   }
 })

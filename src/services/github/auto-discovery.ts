@@ -236,7 +236,7 @@ export class GitHubAutoDiscoveryService {
       where: { id: employeeId },
       data: {
         githubUsername: githubMember.login,
-        githubUserId: githubMember.id,
+        githubId: String(githubMember.id),
         autoDiscovered: true,
         discoveryConfidence: confidence
       }
@@ -476,7 +476,7 @@ export class GitHubAutoDiscoveryService {
       }
 
       // Create skill records
-      for (const [languageName, data] of skillData) {
+      for (const [languageName, data] of Array.from(skillData.entries())) {
         // Determine skill level based on metrics
         let level: SkillLevel = 'BEGINNER'
         if (data.linesOfCode > 10000 && data.repositories > 10) level = 'EXPERT'

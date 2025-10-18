@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { loggers } from '@/lib/logger'
 import { SkillLevel } from '@prisma/client'
 
-const logger = loggers.github.skills
+const logger = loggers.external('github:skills')
 
 interface CodeAnalysis {
   languages: Record<string, number> // language -> lines of code
@@ -52,30 +52,30 @@ export class SkillDetector {
 
   // File patterns to detect frameworks/tools
   private readonly frameworkPatterns: Record<string, RegExp[]> = {
-    'React': [/package\.json.*"react":/s, /\.jsx$/, /\.tsx$/],
-    'Next.js': [/next\.config\.(js|ts)/, /package\.json.*"next":/s],
-    'Vue.js': [/\.vue$/, /package\.json.*"vue":/s],
-    'Angular': [/angular\.json/, /package\.json.*"@angular\/core":/s],
+    'React': [/package\.json.*"react":/, /\.jsx$/, /\.tsx$/],
+    'Next.js': [/next\.config\.(js|ts)/, /package\.json.*"next":/],
+    'Vue.js': [/\.vue$/, /package\.json.*"vue":/],
+    'Angular': [/angular\.json/, /package\.json.*"@angular\/core":/],
     'Node.js': [/package\.json/, /\.js$/],
-    'Express.js': [/package\.json.*"express":/s],
-    'Django': [/manage\.py/, /settings\.py/, /requirements\.txt.*Django/s],
-    'Flask': [/requirements\.txt.*Flask/s, /app\.py.*Flask/s],
-    'Spring Boot': [/pom\.xml.*spring-boot/s, /build\.gradle.*spring-boot/s],
-    'Rails': [/Gemfile.*rails/s, /config\/routes\.rb/],
-    'Laravel': [/composer\.json.*laravel/s, /artisan$/],
+    'Express.js': [/package\.json.*"express":/],
+    'Django': [/manage\.py/, /settings\.py/, /requirements\.txt.*Django/],
+    'Flask': [/requirements\.txt.*Flask/, /app\.py.*Flask/],
+    'Spring Boot': [/pom\.xml.*spring-boot/, /build\.gradle.*spring-boot/],
+    'Rails': [/Gemfile.*rails/, /config\/routes\.rb/],
+    'Laravel': [/composer\.json.*laravel/, /artisan$/],
     'Docker': [/Dockerfile/, /docker-compose\.yml/],
-    'Kubernetes': [/\.yaml$.*kind:\s*(Deployment|Service|Pod)/s],
+    'Kubernetes': [/\.yaml$.*kind:\s*(Deployment|Service|Pod)/],
     'Terraform': [/\.tf$/, /\.tfvars$/],
     'AWS': [/\.aws\//, /aws-sdk/, /boto3/],
     'PostgreSQL': [/\.sql$/, /migrations\/.*sql/],
-    'MongoDB': [/package\.json.*mongodb/s, /mongoose/],
-    'Redis': [/package\.json.*redis/s, /redis\.conf/],
-    'GraphQL': [/\.graphql$/, /schema\.gql/, /package\.json.*graphql/s],
-    'Prisma': [/prisma\/schema\.prisma/, /package\.json.*@prisma/s],
+    'MongoDB': [/package\.json.*mongodb/, /mongoose/],
+    'Redis': [/package\.json.*redis/, /redis\.conf/],
+    'GraphQL': [/\.graphql$/, /schema\.gql/, /package\.json.*graphql/],
+    'Prisma': [/prisma\/schema\.prisma/, /package\.json.*@prisma/],
     'Jest': [/jest\.config/, /\.test\.(js|ts)$/, /\.spec\.(js|ts)$/],
     'Cypress': [/cypress\.json/, /cypress\.config/],
-    'Webpack': [/webpack\.config/, /package\.json.*webpack/s],
-    'Tailwind CSS': [/tailwind\.config/, /package\.json.*tailwindcss/s]
+    'Webpack': [/webpack\.config/, /package\.json.*webpack/],
+    'Tailwind CSS': [/tailwind\.config/, /package\.json.*tailwindcss/]
   }
 
   async detectSkillsFromRepository(
@@ -161,7 +161,7 @@ export class SkillDetector {
 
     const skills: SkillDetectionResult[] = []
 
-    for (const [skillName, data] of skillMap) {
+    for (const [skillName, data] of Array.from(skillMap.entries())) {
       const totalLines = data.additions + data.deletions
       skills.push({
         skillName,

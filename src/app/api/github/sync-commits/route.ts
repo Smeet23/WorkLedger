@@ -87,7 +87,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
                 authorName: commit.commit.author?.name || 'Unknown',
                 authorEmail: commit.commit.author?.email || 'unknown@example.com',
                 authorDate: commit.commit.author?.date ? new Date(commit.commit.author.date) : new Date(),
-                committedAt: commit.commit.committer?.date ? new Date(commit.commit.committer.date) : new Date()
+                committerName: commit.commit.committer?.name,
+                committerEmail: commit.commit.committer?.email,
+                commitDate: commit.commit.committer?.date ? new Date(commit.commit.committer.date) : new Date()
               },
               create: {
                 repositoryId: repo.id,
@@ -96,7 +98,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
                 authorName: commit.commit.author?.name || 'Unknown',
                 authorEmail: commit.commit.author?.email || 'unknown@example.com',
                 authorDate: commit.commit.author?.date ? new Date(commit.commit.author.date) : new Date(),
-                committedAt: commit.commit.committer?.date ? new Date(commit.commit.committer.date) : new Date()
+                committerName: commit.commit.committer?.name,
+                committerEmail: commit.commit.committer?.email,
+                commitDate: commit.commit.committer?.date ? new Date(commit.commit.committer.date) : new Date()
               }
             })
 

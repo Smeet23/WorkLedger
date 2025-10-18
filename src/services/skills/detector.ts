@@ -42,7 +42,11 @@ export class SkillDetector {
    */
   async detectFromRepositories(employeeId: string): Promise<DetectedSkill[]> {
     const repositories = await db.repository.findMany({
-      where: { employeeId },
+      where: {
+        employeeRepositories: {
+          some: { employeeId }
+        }
+      },
       include: { activities: true }
     })
 
@@ -321,7 +325,11 @@ export class SkillDetector {
    */
   async detectPractices(employeeId: string): Promise<DetectedSkill[]> {
     const repositories = await db.repository.findMany({
-      where: { employeeId },
+      where: {
+        employeeRepositories: {
+          some: { employeeId }
+        }
+      },
       include: { activities: true }
     })
 
