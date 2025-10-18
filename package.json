@@ -11,6 +11,7 @@
     "db:migrate": "dotenv -e .env -- prisma migrate dev",
     "db:studio": "dotenv -e .env -- prisma studio",
     "db:seed": "dotenv -e .env -- tsx prisma/seed.ts",
+    "db:clear": "dotenv -e .env -- tsx prisma/clear.ts",
     "db:generate": "dotenv -e .env -- prisma generate",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
