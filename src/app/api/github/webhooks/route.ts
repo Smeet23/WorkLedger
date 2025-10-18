@@ -267,27 +267,94 @@ async function handleInstallationRepositoriesEvent(payload: any): Promise<void> 
 }
 
 async function handlePushEvent(payload: any): Promise<void> {
-  const { repository, commits, pusher } = payload
+  const { repository, commits, pusher, ref } = payload
 
   const companyId = await getCompanyIdFromInstallation(payload.installation.id)
   if (!companyId) return
 
   logger.info('Processing push event', {
     repository: repository.full_name,
+    branch: ref,
     commits: commits.length,
     pusher: pusher.name
   })
 
-  // Update repository last activity
-  await db.repository.updateMany({
-    where: {
-      githubRepoId: String(repository.id),
-      companyId
-    },
-    data: {
+  // Find or create repository in database
+  const repo = await db.repository.upsert({
+    where: { githubRepoId: String(repository.id) },
+    update: {
       lastActivityAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      pushedAt: new Date()
+    },
+    create: {
+      companyId,
+      githubRepoId: String(repository.id),
+      name: repository.name,
+      fullName: repository.full_name,
+      description: repository.description,
+      isPrivate: repository.private || false,
+      defaultBranch: repository.default_branch || 'main',
+      githubCreatedAt: repository.created_at ? new Date(repository.created_at) : new Date(),
+      lastActivityAt: new Date(),
+      pushedAt: new Date()
     }
+  })
+
+  logger.info('Repository updated', { repositoryId: repo.id })
+
+  // Save each commit from the push event
+  let savedCommits = 0
+  for (const commit of commits) {
+    try {
+      await db.commit.upsert({
+        where: {
+          repositoryId_sha: {
+            repositoryId: repo.id,
+            sha: commit.id
+          }
+        },
+        update: {
+          message: commit.message,
+          authorName: commit.author?.name || commit.author?.username || 'Unknown',
+          authorEmail: commit.author?.email || 'unknown@example.com',
+          authorDate: commit.timestamp ? new Date(commit.timestamp) : new Date(),
+          committerName: commit.committer?.name || commit.committer?.username,
+          committerEmail: commit.committer?.email,
+          commitDate: commit.timestamp ? new Date(commit.timestamp) : new Date(),
+          htmlUrl: commit.url,
+          apiUrl: commit.url
+        },
+        create: {
+          repositoryId: repo.id,
+          sha: commit.id,
+          message: commit.message,
+          authorName: commit.author?.name || commit.author?.username || 'Unknown',
+          authorEmail: commit.author?.email || 'unknown@example.com',
+          authorDate: commit.timestamp ? new Date(commit.timestamp) : new Date(),
+          committerName: commit.committer?.name || commit.committer?.username,
+          committerEmail: commit.committer?.email,
+          commitDate: commit.timestamp ? new Date(commit.timestamp) : new Date(),
+          htmlUrl: commit.url,
+          apiUrl: commit.url
+        }
+      })
+      savedCommits++
+    } catch (error) {
+      logger.error('Failed to save commit', error, { sha: commit.id })
+    }
+  }
+
+  logger.info('Commits saved', { savedCommits, totalCommits: commits.length })
+
+  // Update repository commit count
+  const totalCommits = await db.commit.count({
+    where: { repositoryId: repo.id }
+  })
+
+  await db.repository.update({
+    where: { id: repo.id },
+    data: { totalCommits }
   })
 
   // Find employee by GitHub username
@@ -299,12 +366,35 @@ async function handlePushEvent(payload: any): Promise<void> {
   })
 
   if (employee) {
-    // Trigger skill re-detection for this employee
-    // This could be queued as a background job
-    logger.info('Triggering skill update for employee', {
+    // Link employee to repository if not already linked
+    await db.employeeRepository.upsert({
+      where: {
+        employeeId_repositoryId: {
+          employeeId: employee.id,
+          repositoryId: repo.id
+        }
+      },
+      update: {
+        lastActivityAt: new Date()
+      },
+      create: {
+        employeeId: employee.id,
+        repositoryId: repo.id,
+        lastActivityAt: new Date()
+      }
+    })
+
+    logger.info('Employee linked to repository', {
       employeeId: employee.id,
       githubUsername: pusher.name,
-      newCommits: commits.length
+      newCommits: savedCommits
+    })
+
+    // Trigger skill re-detection for this employee
+    // This could be queued as a background job in production
+    logger.info('Skill update recommended for employee', {
+      employeeId: employee.id,
+      repository: repository.full_name
     })
   }
 }
