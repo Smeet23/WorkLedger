@@ -12,7 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { GitBranch, Code, Clock, CheckCircle, AlertCircle, RefreshCw, Loader2 } from 'lucide-react'
+import { GitBranch, Code, Clock, CheckCircle, AlertCircle, RefreshCw, Loader2, Eye, GitCommit } from 'lucide-react'
+import Link from 'next/link'
 
 interface Repository {
   id: string
@@ -251,14 +252,27 @@ export function RepositorySyncStatus({ companyId }: RepositorySyncStatusProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => syncRepository(repo.id)}
-                    disabled={repo.syncStatus === 'syncing' || syncing}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${repo.syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Link href={`/company/repos/${repo.id}`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="View commits and contributions"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => syncRepository(repo.id)}
+                      disabled={repo.syncStatus === 'syncing' || syncing}
+                      title="Resync repository"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${repo.syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

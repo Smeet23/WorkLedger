@@ -58,18 +58,31 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     })
 
     // Transform the data to match the component's expected format
-    const formattedRepos = repositories.map(repo => ({
-      id: repo.id,
-      name: repo.name,
-      fullName: repo.fullName,
-      isPrivate: repo.isPrivate,
-      primaryLanguage: repo.primaryLanguage,
-      languages: repo.languages || {},
-      lastActivityAt: repo.lastActivityAt?.toISOString() || null,
-      totalCommits: repo._count.commits,
-      syncStatus: 'synced' as const, // Default status
-      syncProgress: 100
-    }))
+    const formattedRepos = repositories.map(repo => {
+      // Calculate language percentages from byte counts
+      const languageBytes = repo.languages as Record<string, number> || {}
+      const totalBytes = Object.values(languageBytes).reduce((sum, bytes) => sum + bytes, 0)
+
+      const languagePercentages: Record<string, number> = {}
+      if (totalBytes > 0) {
+        for (const [lang, bytes] of Object.entries(languageBytes)) {
+          languagePercentages[lang] = (bytes / totalBytes) * 100
+        }
+      }
+
+      return {
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.fullName,
+        isPrivate: repo.isPrivate,
+        primaryLanguage: repo.primaryLanguage,
+        languages: languagePercentages, // Now sending actual percentages!
+        lastActivityAt: repo.lastActivityAt?.toISOString() || null,
+        totalCommits: repo._count.commits,
+        syncStatus: 'synced' as const, // Default status
+        syncProgress: 100
+      }
+    })
 
     logger.info('Repositories fetched successfully', {
       companyId,
