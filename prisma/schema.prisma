@@ -79,6 +79,10 @@ model Company {
   githubIntegrations GitHubIntegration[]
   githubWebhooks GitHubWebhook[]
   githubTokenAudits GitHubTokenAudit[]
+  slackIntegrations SlackIntegration[]
+  slackWorkspaces SlackWorkspace[]
+  slackChannels SlackChannel[]
+  slackWebhooks SlackWebhook[]
 
   // Metadata
   createdAt   DateTime         @default(now())
@@ -158,6 +162,8 @@ model Employee {
   skillEvolutions SkillEvolution[]
   githubOrganizationMembers GitHubOrganizationMember[]
   githubTokenAudits GitHubTokenAudit[]
+  slackUsers SlackUser[]
+  slackMessages SlackMessage[]
 
   // Metadata
   createdAt       DateTime      @default(now())
@@ -878,3 +884,250 @@ model GitHubTokenAudit {
 // Indexes for Performance
 // @@index([companyId]) // Already covered by foreign keys
 // @@index([employeeId]) // Already covered by foreign keys
+
+// ============================================
+// SLACK INTEGRATION MODELS
+// ============================================
+
+// Slack Integration (OAuth tokens and workspace connection)
+model SlackIntegration {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Slack workspace details
+  teamId          String    @unique // Slack team/workspace ID
+  teamName        String
+  teamDomain      String?
+
+  // Encrypted token storage
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+
+  // Bot/App details
+  botUserId       String?   // Bot user ID
+  botAccessToken  String?   // Encrypted bot token
+  scope           String?   // Granted scopes
+
+  // Status tracking
+  isActive        Boolean   @default(true)
+  lastSync        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deactivatedAt   DateTime?
+
+  // Relationships
+  workspace       SlackWorkspace?
+
+  @@unique([companyId, teamId])
+  @@index([companyId, isActive])
+  @@map("slack_integrations")
+}
+
+// Slack Workspace (Team info)
+model SlackWorkspace {
+  id              String    @id @default(cuid())
+  integrationId   String    @unique
+  integration     SlackIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Workspace details
+  teamId          String
+  teamName        String
+  teamDomain      String?
+  teamUrl         String?
+  teamIcon        String?
+
+  // Workspace stats
+  totalMembers    Int       @default(0)
+  totalChannels   Int       @default(0)
+  totalMessages   Int       @default(0)
+
+  // Enterprise info
+  enterpriseId    String?
+  enterpriseName  String?
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([companyId, teamId])
+  @@map("slack_workspaces")
+}
+
+// Slack Channels
+model SlackChannel {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Channel details
+  slackChannelId  String    // Slack's channel ID (e.g., C1234567890)
+  name            String
+  nameNormalized  String?
+  topic           String?
+  purpose         String?
+
+  // Channel type
+  isPrivate       Boolean   @default(false)
+  isArchived      Boolean   @default(false)
+  isGeneral       Boolean   @default(false)
+
+  // Channel stats
+  memberCount     Int       @default(0)
+  messageCount    Int       @default(0)
+  lastActivityAt  DateTime?
+
+  // Creator
+  creatorId       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  messages        SlackMessage[]
+
+  @@unique([companyId, slackChannelId])
+  @@index([companyId, isArchived])
+  @@map("slack_channels")
+}
+
+// Slack Users (mapped to employees)
+model SlackUser {
+  id              String    @id @default(cuid())
+  companyId       String
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  // Slack user details
+  slackUserId     String    // Slack's user ID (e.g., U1234567890)
+  slackUsername   String
+  realName        String?
+  displayName     String?
+  email           String?
+  title           String?
+  phone           String?
+
+  // Profile
+  avatarUrl       String?
+  statusText      String?
+  statusEmoji     String?
+
+  // User state
+  isBot           Boolean   @default(false)
+  isAdmin         Boolean   @default(false)
+  isOwner         Boolean   @default(false)
+  isDeleted       Boolean   @default(false)
+  isRestricted    Boolean   @default(false)
+
+  // Timezone
+  timezone        String?
+  timezoneOffset  Int?      // Offset in seconds
+
+  // Employee matching
+  matchConfidence Float?    // 0.0 to 1.0
+  matchMethod     String?   // 'email', 'name', 'manual'
+
+  // Activity stats
+  totalMessages   Int       @default(0)
+  lastActivityAt  DateTime?
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  messages        SlackMessage[]
+
+  @@unique([companyId, slackUserId])
+  @@index([employeeId])
+  @@index([email])
+  @@map("slack_users")
+}
+
+// Slack Messages (aggregated for privacy)
+model SlackMessage {
+  id              String    @id @default(cuid())
+  companyId       String
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  slackUserId     String?
+  slackUser       SlackUser? @relation(fields: [slackUserId], references: [id], onDelete: SetNull)
+  channelId       String
+  channel         SlackChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  // Message details
+  messageTs       String    @unique // Slack timestamp (for deduplication)
+  messageType     String    @default("message") // message, thread_reply, etc
+  text            String    @db.Text // Message content
+
+  // Thread information
+  threadTs        String?   // Parent message timestamp if this is a reply
+  isThreadReply   Boolean   @default(false)
+  replyCount      Int       @default(0) // Number of replies if this is a parent
+
+  // Message timestamp
+  timestamp       DateTime  // Exact message timestamp
+  date            DateTime  // Date only (for aggregation)
+  hour            Int       // Hour of day (0-23)
+
+  // Message metadata
+  mentions        Json?     // Array of mentioned user IDs
+  reactions       Json?     // Reaction data
+  attachments     Json?     // File attachments
+  links           Json?     // Extracted links
+
+  // Analytics counters
+  mentionCount    Int       @default(0)
+  reactionCount   Int       @default(0)
+  linkCount       Int       @default(0)
+  fileCount       Int       @default(0)
+
+  // Response metrics
+  hasResponse     Boolean   @default(false)
+  responseTimeMinutes Int?  // Time to first response in thread
+
+  // AI Analysis (to be added later)
+  sentimentScore  Float?    // -1.0 to 1.0
+  clarityScore    Float?    // 0.0 to 1.0
+  professionalismScore Float? // 0.0 to 1.0
+  analyzedAt      DateTime?
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId, date])
+  @@index([employeeId, date])
+  @@index([channelId, date])
+  @@index([threadTs])
+  @@index([messageTs])
+  @@map("slack_messages")
+}
+
+// Slack Webhooks
+model SlackWebhook {
+  id              String    @id @default(cuid())
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Webhook details
+  eventType       String    // message.channels, user.changed, etc
+  eventSubtype    String?
+  payload         Json
+
+  // Processing status
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  errorMessage    String?
+  retryCount      Int       @default(0)
+
+  // Metadata
+  receivedAt      DateTime  @default(now())
+  slackEventId    String?   // Slack's event ID for deduplication
+
+  @@index([processed, receivedAt])
+  @@index([companyId, eventType, receivedAt])
+  @@index([slackEventId])
+  @@map("slack_webhooks")
+}

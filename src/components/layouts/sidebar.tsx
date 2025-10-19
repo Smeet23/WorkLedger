@@ -66,7 +66,7 @@ const companyNavItems: NavItem[] = [
   },
   {
     title: "Integrations",
-    href: "/dashboard/integrations/github",
+    href: "/dashboard/integrations",
     icon: GitBranch,
   },
   {
