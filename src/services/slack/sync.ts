@@ -71,6 +71,10 @@ export class SlackSyncService {
         throw new Error('No active Slack integration found')
       }
 
+      if (!teamInfo || !teamInfo.id) {
+        throw new Error('Team information is invalid or Team ID is required')
+      }
+
       // Upsert workspace
       await db.slackWorkspace.upsert({
         where: {
@@ -83,17 +87,17 @@ export class SlackSyncService {
           integrationId: integration.id,
           companyId: this.companyId,
           teamId: teamInfo.id,
-          teamName: teamInfo.name,
-          teamDomain: teamInfo.domain,
-          teamUrl: teamInfo.url,
+          teamName: teamInfo.name || 'Unknown Team',
+          teamDomain: teamInfo.domain || null,
+          teamUrl: teamInfo.url || null,
           teamIcon: (teamInfo as any).icon?.image_132,
           enterpriseId: (teamInfo as any).enterprise_id,
           enterpriseName: (teamInfo as any).enterprise_name,
         },
         update: {
-          teamName: teamInfo.name,
-          teamDomain: teamInfo.domain,
-          teamUrl: teamInfo.url,
+          teamName: teamInfo.name || 'Unknown Team',
+          teamDomain: teamInfo.domain || null,
+          teamUrl: teamInfo.url || null,
           teamIcon: (teamInfo as any).icon?.image_132,
           updatedAt: new Date(),
         },
@@ -370,10 +374,10 @@ export class SlackSyncService {
                 timestamp: timestamp,
                 date: date,
                 hour: hour,
-                mentions: mentions.length > 0 ? mentions : null,
-                reactions: msg.reactions || null,
-                attachments: msg.files || null,
-                links: links.length > 0 ? links : null,
+                mentions: mentions.length > 0 ? mentions : undefined,
+                reactions: msg.reactions || undefined,
+                attachments: msg.files || undefined,
+                links: links.length > 0 ? links : undefined,
                 mentionCount: mentions.length,
                 reactionCount: msg.reactions?.length || 0,
                 linkCount: links.length,
@@ -381,7 +385,7 @@ export class SlackSyncService {
               },
               update: {
                 text: msg.text,
-                reactions: msg.reactions || null,
+                reactions: msg.reactions || undefined,
                 reactionCount: msg.reactions?.length || 0,
                 updatedAt: new Date(),
               },

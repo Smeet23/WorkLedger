@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ClientPagination } from "@/components/ui/client-pagination"
 import Link from "next/link"
 import {
   BarChart,
@@ -25,6 +26,8 @@ import {
   Grid,
   List
 } from 'lucide-react'
+
+const ITEMS_PER_PAGE = 12
 
 interface SkillData {
   id: string
@@ -58,10 +61,21 @@ export default function CompanySkillsMatrix() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [skillsPage, setSkillsPage] = useState(1)
+  const [employeesPage, setEmployeesPage] = useState(1)
 
   useEffect(() => {
     fetchSkillsMatrix()
   }, [])
+
+  // Reset page when filters change - MUST be before any early returns
+  useEffect(() => {
+    setSkillsPage(1)
+  }, [selectedCategory])
+
+  useEffect(() => {
+    setEmployeesPage(1)
+  }, [selectedDepartment])
 
   const fetchSkillsMatrix = async () => {
     try {
@@ -127,12 +141,25 @@ export default function CompanySkillsMatrix() {
   const departments = ['all', ...Object.keys(data.employeesByDepartment || {})]
 
   const filteredSkills = selectedCategory === 'all'
-    ? data.skills
-    : data.skillsByCategory[selectedCategory] || []
+    ? (data.skills || [])
+    : (data.skillsByCategory?.[selectedCategory] || [])
 
   const filteredEmployees = selectedDepartment === 'all'
-    ? data.employees
-    : data.employeesByDepartment[selectedDepartment] || []
+    ? (data.employees || [])
+    : (data.employeesByDepartment?.[selectedDepartment] || [])
+
+  // Pagination calculations
+  const totalSkillPages = Math.ceil((filteredSkills?.length || 0) / ITEMS_PER_PAGE)
+  const paginatedSkills = filteredSkills?.slice(
+    (skillsPage - 1) * ITEMS_PER_PAGE,
+    skillsPage * ITEMS_PER_PAGE
+  ) || []
+
+  const totalEmployeePages = Math.ceil((filteredEmployees?.length || 0) / ITEMS_PER_PAGE)
+  const paginatedEmployees = filteredEmployees?.slice(
+    (employeesPage - 1) * ITEMS_PER_PAGE,
+    employeesPage * ITEMS_PER_PAGE
+  ) || []
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -260,7 +287,7 @@ export default function CompanySkillsMatrix() {
               <CardContent>
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {data.skills.slice(0, 15).map((skill: SkillData) => (
+                    {paginatedSkills.map((skill: SkillData) => (
                       <div key={skill.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
@@ -297,7 +324,7 @@ export default function CompanySkillsMatrix() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {data.skills.map((skill: SkillData) => (
+                    {paginatedSkills.map((skill: SkillData) => (
                       <div key={skill.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
@@ -332,6 +359,17 @@ export default function CompanySkillsMatrix() {
                   </div>
                 )}
               </CardContent>
+              {totalSkillPages > 1 && (
+                <div className="px-6 pb-6">
+                  <ClientPagination
+                    currentPage={skillsPage}
+                    totalPages={totalSkillPages}
+                    totalItems={filteredSkills.length}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={setSkillsPage}
+                  />
+                </div>
+              )}
             </Card>
           </TabsContent>
 
@@ -361,7 +399,7 @@ export default function CompanySkillsMatrix() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredEmployees.map((employee: any) => {
+                  {paginatedEmployees.map((employee: any) => {
                     const employeeSkills = data.matrix[employee.id] || {}
                     const topSkills = Object.entries(employeeSkills)
                       .sort((a: any, b: any) => b[1].confidence - a[1].confidence)
@@ -415,6 +453,17 @@ export default function CompanySkillsMatrix() {
                   })}
                 </div>
               </CardContent>
+              {totalEmployeePages > 1 && (
+                <div className="px-6 pb-6">
+                  <ClientPagination
+                    currentPage={employeesPage}
+                    totalPages={totalEmployeePages}
+                    totalItems={filteredEmployees.length}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={setEmployeesPage}
+                  />
+                </div>
+              )}
             </Card>
           </TabsContent>
 

@@ -109,7 +109,7 @@ export class JiraService {
   /**
    * Decrypt sensitive data
    */
-  private static decrypt(encryptedData: string): string {
+  public static decrypt(encryptedData: string): string {
     const parts = encryptedData.split(':')
     const iv = Buffer.from(parts[0], 'hex')
     const authTag = Buffer.from(parts[1], 'hex')

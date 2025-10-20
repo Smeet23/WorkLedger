@@ -13,21 +13,18 @@ import {
   AlertTriangle,
   TrendingUp,
   Clock,
-  GitCommit,
-  CheckCircle,
-  XCircle,
   Timer,
   Zap,
   Target,
   BarChart3,
   Brain,
-  Eye,
   ArrowUp,
   ArrowDown,
-  Minus
+  Minus,
+  GitCommit
 } from "lucide-react"
-import Link from "next/link"
 import { format, formatDistance, startOfDay, subDays } from 'date-fns'
+import { TeamTableClient } from "@/components/manager/team-table-client"
 
 // Get real-time team data
 async function getTeamAnalytics(companyId: string) {
@@ -44,7 +41,7 @@ async function getTeamAnalytics(companyId: string) {
     recentCommits,
     skillRecords
   ] = await Promise.all([
-    // Get all employees with their connections
+    // Get ALL employees with their connections for client-side pagination
     db.employee.findMany({
       where: { companyId, isActive: true },
       include: {
@@ -115,8 +112,7 @@ async function getTeamAnalytics(companyId: string) {
 
   // Calculate team metrics
   const connectedEmployees = employees.filter(e => e.githubConnection?.isActive).length
-  const totalEmployees = employees.length
-  const connectionRate = totalEmployees > 0 ? (connectedEmployees / totalEmployees) * 100 : 0
+  const connectionRate = employees.length > 0 ? (connectedEmployees / employees.length) * 100 : 0
 
   // Calculate productivity metrics
   const avgCommitsPerDev = weekActivities / (connectedEmployees || 1)
@@ -406,87 +402,10 @@ export default async function ManagerDashboard() {
 
           {/* Team Status Tab */}
           <TabsContent value="team">
-            <Card className="border border-gray-200">
-              <CardHeader>
-                <CardTitle className="text-base">Team Member Status</CardTitle>
-                <CardDescription>Individual performance and activity tracking</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 text-sm font-medium text-gray-600">Employee</th>
-                        <th className="text-left py-2 text-sm font-medium text-gray-600">Status</th>
-                        <th className="text-left py-2 text-sm font-medium text-gray-600">Last Activity</th>
-                        <th className="text-left py-2 text-sm font-medium text-gray-600">Repositories</th>
-                        <th className="text-left py-2 text-sm font-medium text-gray-600">Skills</th>
-                        <th className="text-left py-2 text-sm font-medium text-gray-600">Score</th>
-                        <th className="text-left py-2 text-sm font-medium text-gray-600">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analytics.employeeMetrics.map(emp => (
-                        <tr key={emp.id} className="border-b hover:bg-gray-50">
-                          <td className="py-3">
-                            <div className="flex items-center">
-                              <div className={`w-2 h-2 rounded-full mr-2 ${
-                                emp.githubConnection?.isActive ? 'bg-green-500' : 'bg-gray-400'
-                              }`} />
-                              <div>
-                                <p className="text-sm font-medium">{emp.firstName} {emp.lastName}</p>
-                                <p className="text-xs text-gray-500">{emp.role}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            {emp.githubConnection?.isActive ? (
-                              <Badge variant="outline" className="text-xs">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Connected
-                              </Badge>
-                            ) : (
-                              <Badge variant="destructive" className="text-xs">
-                                <XCircle className="w-3 h-3 mr-1" />
-                                Not Connected
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="py-3">
-                            <span className="text-sm text-gray-600">
-                              {emp.lastActive
-                                ? formatDistance(new Date(emp.lastActive), new Date(), { addSuffix: true })
-                                : 'Never'
-                              }
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center">
-                              <GitCommit className="w-3 h-3 mr-1 text-gray-400" />
-                              <span className="text-sm">{emp._count.employeeRepositories}</span>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <span className="text-sm">{emp._count.skillRecords}</span>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center">
-                              <span className="text-sm font-semibold">{emp.score}</span>
-                              {emp.score > 100 && <TrendingUp className="w-3 h-3 ml-1 text-green-500" />}
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <Button variant="ghost" size="sm">
-                              View Details
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+            <TeamTableClient
+              employeeMetrics={analytics.employeeMetrics}
+              totalEmployees={analytics.employees.length}
+            />
           </TabsContent>
 
           {/* Performance Tab */}
