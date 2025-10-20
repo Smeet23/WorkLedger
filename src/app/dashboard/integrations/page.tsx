@@ -173,28 +173,30 @@ export default function IntegrationsPage() {
             <p className="text-sm text-muted-foreground">Track tasks, issues, and project progress</p>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Jira */}
-            <Card className="opacity-60">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                    <CheckSquare className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            {/* Jira Integration */}
+            <Link href="/dashboard/integrations/jira">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                      <CheckSquare className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle>Jira</CardTitle>
+                      <CardDescription>Issues & sprints</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle>Jira</CardTitle>
-                    <CardDescription>Issues & sprints</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Track Jira issues, sprint velocity, and team workload distribution.
-                </p>
-                <Button variant="outline" className="w-full mt-4" disabled>
-                  Coming Soon
-                </Button>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Track Jira issues, sprint velocity, and team workload distribution.
+                  </p>
+                  <Button variant="outline" className="w-full mt-4">
+                    Manage Integration →
+                  </Button>
+                </CardContent>
+              </Card>
+            </Link>
 
             {/* Linear */}
             <Card className="opacity-60">

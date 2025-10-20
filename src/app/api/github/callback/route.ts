@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || request.url
     const searchParams = request.nextUrl.searchParams
     const code = searchParams.get('code')
     const state = searchParams.get('state')
@@ -15,13 +16,13 @@ export async function GET(request: NextRequest) {
 
     if (!code || !state || !storedState || state !== storedState) {
       return NextResponse.redirect(
-        new URL(`${returnUrl}?error=invalid_state`, request.url)
+        new URL(`${returnUrl}?error=invalid_state`, baseUrl)
       )
     }
 
     if (!employeeId) {
       return NextResponse.redirect(
-        new URL(`${returnUrl}?error=missing_employee`, request.url)
+        new URL(`${returnUrl}?error=missing_employee`, baseUrl)
       )
     }
 
@@ -208,7 +209,7 @@ export async function GET(request: NextRequest) {
 
     // Clear cookies
     const response = NextResponse.redirect(
-      new URL(`${redirectPath}?connected=true&synced=true`, request.url)
+      new URL(`${redirectPath}?connected=true&synced=true`, baseUrl)
     )
     response.cookies.delete('github_oauth_state')
     response.cookies.delete('github_oauth_employee')
@@ -223,9 +224,10 @@ export async function GET(request: NextRequest) {
 
     // Try to get the return URL from cookies, fallback to dashboard
     const returnUrl = request.cookies.get('github_oauth_return')?.value || '/employee/dashboard'
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || request.url
 
     return NextResponse.redirect(
-      new URL(`${returnUrl}?error=github_connection_failed&message=${encodeURIComponent(error.message || 'Unknown error')}`, request.url)
+      new URL(`${returnUrl}?error=github_connection_failed&message=${encodeURIComponent(error.message || 'Unknown error')}`, baseUrl)
     )
   }
 }

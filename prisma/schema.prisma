@@ -83,6 +83,9 @@ model Company {
   slackWorkspaces SlackWorkspace[]
   slackChannels SlackChannel[]
   slackWebhooks SlackWebhook[]
+  jiraIntegrations JiraIntegration[]
+  jiraProjects JiraProject[]
+  jiraWebhooks JiraWebhook[]
 
   // Metadata
   createdAt   DateTime         @default(now())
@@ -164,6 +167,9 @@ model Employee {
   githubTokenAudits GitHubTokenAudit[]
   slackUsers SlackUser[]
   slackMessages SlackMessage[]
+  jiraUsers JiraUser[]
+  jiraIssues JiraIssue[]
+  jiraWorklogs JiraWorklog[]
 
   // Metadata
   createdAt       DateTime      @default(now())
@@ -1130,4 +1136,333 @@ model SlackWebhook {
   @@index([companyId, eventType, receivedAt])
   @@index([slackEventId])
   @@map("slack_webhooks")
+}
+
+// ================================
+// JIRA INTEGRATION
+// ================================
+
+// Jira Integration
+model JiraIntegration {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Jira instance details
+  cloudId         String    @unique // Atlassian Cloud ID
+  siteUrl         String    // e.g., https://yourcompany.atlassian.net
+  siteName        String
+
+  // Encrypted token storage
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+
+  // Token expiry
+  tokenExpiresAt  DateTime?
+
+  // Account details
+  accountId       String?   // Atlassian account ID
+  accountEmail    String?
+
+  // Status tracking
+  isActive        Boolean   @default(true)
+  lastSync        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deactivatedAt   DateTime?
+
+  // Relationships
+  projects        JiraProject[]
+
+  @@unique([companyId, cloudId])
+  @@index([companyId, isActive])
+  @@map("jira_integrations")
+}
+
+// Jira Projects
+model JiraProject {
+  id              String    @id @default(cuid())
+  integrationId   String
+  integration     JiraIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Project details
+  jiraProjectId   String    // Jira's project ID
+  projectKey      String    // e.g., "WORK", "DEV"
+  name            String
+  description     String?   @db.Text
+  avatarUrl       String?
+
+  // Project type
+  projectType     String?   // software, business, service_desk
+  projectStyle    String?   // classic, next-gen
+
+  // Lead information
+  leadAccountId   String?
+  leadDisplayName String?
+
+  // Project stats
+  issueCount      Int       @default(0)
+  completedIssues Int       @default(0)
+
+  // Status
+  isArchived      Boolean   @default(false)
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  issues          JiraIssue[]
+
+  @@unique([companyId, jiraProjectId])
+  @@index([companyId])
+  @@index([projectKey])
+  @@map("jira_projects")
+}
+
+// Jira Users (for matching with employees)
+model JiraUser {
+  id              String    @id @default(cuid())
+  companyId       String
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  // Jira user details
+  accountId       String    // Atlassian account ID
+  displayName     String
+  email           String?
+  avatarUrl       String?
+
+  // User state
+  isActive        Boolean   @default(true)
+  accountType     String?   // atlassian, app, customer
+
+  // Matching
+  matchConfidence Float?    // 0.0 - 1.0
+  matchMethod     String?   // email, name, manual
+
+  // Activity tracking
+  issuesCreated   Int       @default(0)
+  issuesAssigned  Int       @default(0)
+  issuesCompleted Int       @default(0)
+  commentsPosted  Int       @default(0)
+  lastActivityAt  DateTime?
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  createdIssues   JiraIssue[] @relation("IssueCreator")
+  assignedIssues  JiraIssue[] @relation("IssueAssignee")
+  comments        JiraComment[]
+  workLogs        JiraWorklog[]
+
+  @@unique([companyId, accountId])
+  @@index([companyId])
+  @@index([employeeId])
+  @@map("jira_users")
+}
+
+// Jira Issues
+model JiraIssue {
+  id              String    @id @default(cuid())
+  companyId       String
+  projectId       String
+  project         JiraProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Creator
+  creatorId       String?
+  creator         JiraUser? @relation("IssueCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+
+  // Assignee
+  assigneeId      String?
+  assignee        JiraUser? @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  // Issue details
+  jiraIssueId     String    @unique // Jira's issue ID
+  issueKey        String    // e.g., "WORK-123"
+  summary         String
+  description     String?   @db.Text
+
+  // Issue type
+  issueType       String    // Story, Task, Bug, Epic, Subtask
+  issueTypeIconUrl String?
+
+  // Status
+  status          String    // To Do, In Progress, Done, etc
+  statusCategory  String    // new, indeterminate, done
+
+  // Priority
+  priority        String?   // Highest, High, Medium, Low, Lowest
+  priorityIconUrl String?
+
+  // Story points and estimation
+  storyPoints     Int?
+  originalEstimate Int?     // Minutes
+  timeSpent       Int?      // Minutes
+  remainingEstimate Int?    // Minutes
+
+  // Labels and components
+  labels          Json?     // Array of label strings
+  components      Json?     // Array of component objects
+
+  // Dates
+  createdDate     DateTime
+  updatedDate     DateTime
+  resolvedDate    DateTime?
+  dueDate         DateTime?
+
+  // Resolution
+  resolution      String?   // Done, Won't Do, Duplicate, etc
+  resolutionDate  DateTime?
+
+  // Parent/Epic
+  parentIssueKey  String?
+  epicKey         String?
+
+  // URL
+  webUrl          String?
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  comments        JiraComment[]
+  workLogs        JiraWorklog[]
+  transitions     JiraIssueTransition[]
+
+  @@unique([companyId, jiraIssueId])
+  @@index([companyId, status])
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([employeeId])
+  @@index([issueKey])
+  @@map("jira_issues")
+}
+
+// Jira Comments
+model JiraComment {
+  id              String    @id @default(cuid())
+  companyId       String
+  issueId         String
+  issue           JiraIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  // Author
+  authorId        String?
+  author          JiraUser? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  // Comment details
+  jiraCommentId   String    @unique
+  body            String    @db.Text
+
+  // Timestamps
+  createdDate     DateTime
+  updatedDate     DateTime
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([issueId])
+  @@index([authorId])
+  @@map("jira_comments")
+}
+
+// Jira Work Logs (time tracking)
+model JiraWorklog {
+  id              String    @id @default(cuid())
+  companyId       String
+  issueId         String
+  issue           JiraIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  // Author
+  authorId        String?
+  author          JiraUser? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  // Worklog details
+  jiraWorklogId   String    @unique
+  comment         String?   @db.Text
+  timeSpentSeconds Int      // Time logged in seconds
+
+  // Timestamps
+  startedDate     DateTime
+  createdDate     DateTime
+  updatedDate     DateTime
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([issueId])
+  @@index([authorId])
+  @@index([employeeId])
+  @@index([startedDate])
+  @@map("jira_worklogs")
+}
+
+// Jira Issue Transitions (status changes)
+model JiraIssueTransition {
+  id              String    @id @default(cuid())
+  companyId       String
+  issueId         String
+  issue           JiraIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  // Transition details
+  fromStatus      String
+  toStatus        String
+  fromStatusCategory String
+  toStatusCategory String
+
+  // Who made the change
+  authorAccountId String?
+  authorDisplayName String?
+
+  // Timestamp
+  transitionDate  DateTime
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([issueId])
+  @@index([transitionDate])
+  @@map("jira_issue_transitions")
+}
+
+// Jira Webhooks
+model JiraWebhook {
+  id              String    @id @default(cuid())
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Webhook details
+  eventType       String    // jira:issue_created, jira:issue_updated, etc
+  webhookEvent    String?   // issue_created, issue_updated, worklog_updated
+  issueKey        String?
+  payload         Json
+
+  // Processing status
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  errorMessage    String?
+  retryCount      Int       @default(0)
+
+  // Metadata
+  receivedAt      DateTime  @default(now())
+  jiraEventId     String?   // Jira's event ID for deduplication
+
+  @@index([processed, receivedAt])
+  @@index([companyId, eventType, receivedAt])
+  @@index([jiraEventId])
+  @@map("jira_webhooks")
 }

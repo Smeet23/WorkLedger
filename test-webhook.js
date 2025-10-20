@@ -2,10 +2,13 @@
 
 const crypto = require('crypto');
 const https = require('https');
+const http = require('http');
 
 // Configuration
-const WEBHOOK_URL = 'https://3fe827bb2b12.ngrok-free.app/api/github/webhooks';
-const WEBHOOK_SECRET = '83debc469d122d19ba6513b24c7934fa66398813a5e6d77dc7dfa388ef31382c';
+const WEBHOOK_URL = process.env.APP_URL
+  ? `${process.env.APP_URL}/api/github/webhooks`
+  : 'http://localhost:3000/api/github/webhooks';
+const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || '83debc469d122d19ba6513b24c7934fa66398813a5e6d77dc7dfa388ef31382c';
 
 // Test payload - Push event
 const pushPayload = {
@@ -97,10 +100,12 @@ function sendWebhook(eventType, payload) {
   console.log(`Payload:\n${payloadString}\n`);
 
   const url = new URL(WEBHOOK_URL);
+  const isHttps = url.protocol === 'https:';
+  const httpModule = isHttps ? https : http;
 
   const options = {
     hostname: url.hostname,
-    port: url.port || 443,
+    port: url.port || (isHttps ? 443 : 80),
     path: url.pathname,
     method: 'POST',
     headers: {
@@ -113,7 +118,7 @@ function sendWebhook(eventType, payload) {
     }
   };
 
-  const req = https.request(options, (res) => {
+  const req = httpModule.request(options, (res) => {
     let data = '';
 
     res.on('data', (chunk) => {
