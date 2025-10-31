@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { SlackService } from '@/services/slack/client'
 import { SlackSyncService } from '@/services/slack/sync'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -17,8 +19,9 @@ export async function GET(request: NextRequest) {
     // Handle OAuth errors
     if (error) {
       console.error('❌ Slack OAuth error:', error)
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || request.url
       return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL}/dashboard?slack_error=${encodeURIComponent(error)}`
+        new URL(`/dashboard?slack_error=${encodeURIComponent(error)}`, baseUrl)
       )
     }
 
@@ -77,17 +80,19 @@ export async function GET(request: NextRequest) {
     })
 
     // Redirect to dashboard with success message
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || request.url
     return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard?slack_connected=true&team=${encodeURIComponent(tokenData.team.name)}`
+      new URL(`/dashboard?slack_connected=true&team=${encodeURIComponent(tokenData.team.name)}`, baseUrl)
     )
   } catch (error) {
     console.error('❌ Error in Slack OAuth callback:', error)
 
     // Redirect to dashboard with error
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || request.url
     return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/dashboard?slack_error=${encodeURIComponent(
+      new URL(`/dashboard?slack_error=${encodeURIComponent(
         error instanceof Error ? error.message : 'Unknown error'
-      )}`
+      )}`, baseUrl)
     )
   }
 }

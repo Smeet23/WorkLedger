@@ -7,6 +7,8 @@ import { createApiResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 import { jobManager } from '@/lib/queue'
 
+export const dynamic = 'force-dynamic'
+
 const apiResponse = createApiResponse()
 
 /**

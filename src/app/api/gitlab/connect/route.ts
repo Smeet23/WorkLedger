@@ -4,6 +4,8 @@ import { GitLabService } from '@/services/gitlab/client'
 import { createApiResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 const apiResponse = createApiResponse()
 
 /**

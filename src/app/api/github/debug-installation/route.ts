@@ -5,6 +5,8 @@ import { createApiResponse, withErrorHandling } from '@/lib/api-response'
 import { AuthenticationError, NotFoundError } from '@/lib/errors'
 import { loggers } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/github/debug-installation
 // Debug endpoint to check installation and token status
 export const GET = withErrorHandling(async (request: NextRequest) => {

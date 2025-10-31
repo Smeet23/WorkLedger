@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GitHubService } from '@/services/github/client'
 import { db } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || request.url

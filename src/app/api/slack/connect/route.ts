@@ -9,6 +9,8 @@ import { authConfig } from '@/lib/auth'
 import { SlackService } from '@/services/slack/client'
 import { db } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // Get authenticated session

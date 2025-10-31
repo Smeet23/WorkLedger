@@ -4,6 +4,8 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createApiResponse } from '@/lib/api-response'
 
+export const dynamic = 'force-dynamic'
+
 const apiResponse = createApiResponse()
 
 const updateSettingsSchema = z.object({

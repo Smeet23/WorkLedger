@@ -4,6 +4,8 @@ import { GitHubService } from '@/services/github/client'
 import { generateSecureToken } from '@/lib/crypto'
 import { db } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * EMPLOYEE OAuth Connect Route
  * This route is ONLY for individual employee OAuth connections

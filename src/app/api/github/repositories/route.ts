@@ -5,6 +5,8 @@ import { createApiResponse, withErrorHandling } from '@/lib/api-response'
 import { AuthenticationError, NotFoundError, ValidationError } from '@/lib/errors'
 import { loggers } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/github/repositories
 // Returns repositories for a company
 export const GET = withErrorHandling(async (request: NextRequest) => {

@@ -5,6 +5,8 @@ import { createApiResponse, withErrorHandling } from '@/lib/api-response'
 import { AuthenticationError, NotFoundError } from '@/lib/errors'
 import { loggers } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/github/installation/status
 // Returns the GitHub App installation status for the company
 export const GET = withErrorHandling(async (request: NextRequest) => {

@@ -6,6 +6,8 @@ import { AuthenticationError, NotFoundError } from '@/lib/errors'
 import { loggers } from '@/lib/logger'
 import { enhancedGitHubService } from '@/services/github/enhanced-client'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/github/test-repos
 // Test endpoint to verify GitHub API connection and fetch repositories
 export const GET = withErrorHandling(async (request: NextRequest) => {

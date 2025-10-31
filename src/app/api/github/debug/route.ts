@@ -4,6 +4,8 @@ import { db } from '@/lib/db'
 import { GitHubService } from '@/services/github/client'
 import { Octokit } from '@octokit/rest'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession()

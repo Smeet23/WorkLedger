@@ -9,6 +9,8 @@ import { Octokit } from '@octokit/rest'
 import { App } from '@octokit/app'
 import { config } from '@/lib/config'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/github/diagnose
 // Comprehensive diagnostic endpoint to test every step
 export const GET = withErrorHandling(async (request: NextRequest) => {
