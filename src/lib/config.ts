@@ -18,13 +18,13 @@ const envSchema = z.object({
   // Encryption
   ENCRYPTION_SECRET: z.string().min(32),
 
-  // GitHub OAuth (for individual employees)
-  GITHUB_CLIENT_ID: z.string().min(1),
-  GITHUB_CLIENT_SECRET: z.string().min(1),
+  // GitHub OAuth (for individual employees) - optional for build, but required for GitHub features
+  GITHUB_CLIENT_ID: z.string().optional().default(''),
+  GITHUB_CLIENT_SECRET: z.string().optional().default(''),
 
-  // GitHub App (for organization access)
-  GITHUB_APP_ID: z.string().min(1),
-  GITHUB_PRIVATE_KEY: z.string().min(1),
+  // GitHub App (for organization access) - optional for build, but required for GitHub features
+  GITHUB_APP_ID: z.string().optional().default(''),
+  GITHUB_PRIVATE_KEY: z.string().optional().default(''),
   GITHUB_WEBHOOK_SECRET: z.string().optional(),
 
   // GitLab Integration (optional)
@@ -143,20 +143,20 @@ export const skillConfig = {
 export const githubConfig = {
   // GitHub App configuration (for organizations)
   app: {
-    id: env.GITHUB_APP_ID,
+    id: env.GITHUB_APP_ID || '',
     // Replace literal \n with actual newlines in private key
-    privateKey: env.GITHUB_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    privateKey: (env.GITHUB_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
     // Note: OAuth uses GITHUB_CLIENT_ID, App uses app-specific client ID from GitHub
-    clientId: env.GITHUB_CLIENT_ID, // Using OAuth client for now
-    clientSecret: env.GITHUB_CLIENT_SECRET,
+    clientId: env.GITHUB_CLIENT_ID || '', // Using OAuth client for now
+    clientSecret: env.GITHUB_CLIENT_SECRET || '',
     webhookSecret: env.GITHUB_WEBHOOK_SECRET,
     appName: process.env.NEXT_PUBLIC_GITHUB_APP_NAME || 'workledger-skills',
   },
 
   // OAuth configuration (for individual employees - optional feature)
   oauth: {
-    clientId: env.GITHUB_CLIENT_ID,
-    clientSecret: env.GITHUB_CLIENT_SECRET,
+    clientId: env.GITHUB_CLIENT_ID || '',
+    clientSecret: env.GITHUB_CLIENT_SECRET || '',
     scope: 'repo user:email read:org',
     redirectPath: '/api/github/callback',
   },
