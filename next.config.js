@@ -2,6 +2,16 @@
 const nextConfig = {
   images: {
     domains: ['avatars.githubusercontent.com', 'github.com'],
+    formats: ['image/avif', 'image/webp'],
+  },
+  // Optimize production builds
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  swcMinify: true,
+  // Experimental optimizations
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-avatar', '@radix-ui/react-dialog'],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {

@@ -5,9 +5,6 @@ import { getToken } from "next-auth/jwt"
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
 
-  console.log('=== MIDDLEWARE ===')
-  console.log('Path:', pathname)
-
   // Define route types
   const isAuthPage = pathname.startsWith('/auth')
   const isApiRoute = pathname.startsWith('/api')
@@ -33,12 +30,9 @@ export async function middleware(req: NextRequest) {
   })
 
   const isAuth = !!token
-  console.log('Is Auth:', isAuth)
-  console.log('Token:', token)
 
   // Homepage: redirect authenticated users to their dashboard
   if (isHomePage && isAuth) {
-    console.log('Homepage + Auth: Redirecting to dashboard')
     if (token.role === 'company_admin') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
@@ -47,13 +41,11 @@ export async function middleware(req: NextRequest) {
 
   // Homepage: allow unauthenticated users to see public homepage
   if (isHomePage && !isAuth) {
-    console.log('Homepage + No Auth: Allowing')
     return NextResponse.next()
   }
 
   // Auth pages: redirect authenticated users to their dashboard
   if (isAuthPage && isAuth) {
-    console.log('Auth page + Auth: Redirecting to dashboard')
     if (token.role === 'company_admin') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
@@ -62,7 +54,6 @@ export async function middleware(req: NextRequest) {
 
   // Protected pages: redirect unauthenticated users to signin
   if (isProtectedPage && !isAuth) {
-    console.log('Protected page + No Auth: Redirecting to signin')
     let from = pathname
     if (req.nextUrl.search) {
       from += req.nextUrl.search
@@ -73,7 +64,6 @@ export async function middleware(req: NextRequest) {
     )
   }
 
-  console.log('Allowing request through')
   return NextResponse.next()
 }
 
