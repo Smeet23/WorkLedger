@@ -37,6 +37,32 @@ function generateBreadcrumbs(pathname: string) {
   const segments = pathname.split("/").filter(Boolean)
   const breadcrumbs: { label: string; href: string }[] = []
 
+  // Special case: /company/settings should show "Dashboard > Settings"
+  if (pathname === "/company/settings") {
+    breadcrumbs.push({
+      label: "Dashboard",
+      href: "/dashboard",
+    })
+    breadcrumbs.push({
+      label: "Settings",
+      href: "/company/settings",
+    })
+    return breadcrumbs
+  }
+
+  // Special case: /employee/profile/edit should show "Employee Portal > Profile Settings"
+  if (pathname === "/employee/profile/edit") {
+    breadcrumbs.push({
+      label: "Employee Portal",
+      href: "/employee",
+    })
+    breadcrumbs.push({
+      label: "Profile Settings",
+      href: "/employee/profile/edit",
+    })
+    return breadcrumbs
+  }
+
   let currentPath = ""
   segments.forEach((segment, index) => {
     currentPath += `/${segment}`
@@ -77,7 +103,8 @@ export function Header({ user, showBreadcrumbs = true, userRole = "employee" }: 
 
   // Determine settings and profile URLs based on role
   const settingsUrl = userRole === "company_admin" ? "/company/settings" : "/employee/profile/edit"
-  const profileUrl = "/employee/profile/edit"
+  // Profile should open the user's public profile for all roles
+  const profileUrl = "/employee/public-profile"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -146,12 +173,14 @@ export function Header({ user, showBreadcrumbs = true, userRole = "employee" }: 
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href={profileUrl} className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
+            {userRole !== "company_admin" && (
+              <DropdownMenuItem asChild>
+                <Link href={profileUrl} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link href={settingsUrl} className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />

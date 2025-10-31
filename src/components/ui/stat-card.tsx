@@ -90,14 +90,14 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden transition-all duration-200 hover:shadow-md",
+        "relative overflow-hidden transition-all duration-200 hover:shadow-md min-h-[132px]",
         variant === "gradient" && `bg-gradient-to-br ${colors.gradient}`,
         variant === "bordered" && `border-2 ${colors.border}`,
         className
       )}
       {...props}
     >
-      <div className="p-6">
+      <div className="p-6 h-full">
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>

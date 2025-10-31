@@ -3,6 +3,7 @@ import Link from "next/link"
 import { SignInForm } from "@/components/forms/signin-form"
 import { Building2, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface SearchParams {
   type?: 'company' | 'employee'
@@ -16,25 +17,7 @@ export default function SignInPage({
   const userType = searchParams.type || 'company'
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">
-      {/* Enhanced Background with Light Gradients */}
-
-      {/* Base Gradient - Soft Blue to Purple */}
-      <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50/30" />
-
-      {/* Multiple Gradient Layers for Depth */}
-      <div className="fixed inset-0 bg-gradient-to-tr from-transparent via-blue-100/20 to-indigo-100/30" />
-      <div className="fixed inset-0 bg-gradient-to-bl from-purple-100/20 via-transparent to-blue-100/20" />
-
-      {/* Animated Gradient Orbs */}
-      <div className="fixed inset-0 overflow-hidden">
-        <div className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] bg-gradient-to-br from-blue-300/40 via-indigo-300/30 to-transparent rounded-full blur-3xl animate-blob" />
-        <div className="absolute -bottom-1/4 -left-1/4 w-[800px] h-[800px] bg-gradient-to-tr from-indigo-300/40 via-purple-300/30 to-transparent rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute top-1/3 left-1/3 w-[600px] h-[600px] bg-gradient-to-br from-purple-300/20 via-blue-300/20 to-transparent rounded-full blur-3xl animate-blob animation-delay-4000" />
-      </div>
-
-      {/* Subtle Grid Overlay */}
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_60%,transparent_100%)] opacity-20" />
+    <div className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden gradient-bg-subtle">
 
       {/* Back Button - Minimal & Floating */}
       <div className="fixed top-6 left-6 z-50">
@@ -50,9 +33,9 @@ export default function SignInPage({
         </Button>
       </div>
 
-      {/* Main Content - Perfectly Centered */}
+      {/* Main Content */}
       <div className="relative z-10 w-full max-w-md">
-        <div className="flex flex-col items-center gap-10">
+        <div className="flex flex-col items-center gap-8">
 
           {/* Logo - Clean & Simple */}
           <Link href="/" className="group relative">
@@ -71,18 +54,22 @@ export default function SignInPage({
             </p>
           </div>
 
-          {/* Form - Floating, No Box */}
-          <div className="w-full px-4">
-            <Suspense fallback={
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
-                ))}
+          {/* Form card */}
+          <Card className="w-full border bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-md">
+            <CardContent className="p-6">
+              <div className="w-full">
+                <Suspense fallback={
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+                    ))}
+                  </div>
+                }>
+                  <SignInForm userType={userType} />
+                </Suspense>
               </div>
-            }>
-              <SignInForm userType={userType} />
-            </Suspense>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Divider */}
           <div className="relative w-full px-4">

@@ -51,254 +51,249 @@ export async function GET(
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 20px;
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #ece9e4;
+      padding: 24px;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    .certificate {
-      background: white;
-      max-width: 800px;
-      width: 100%;
-      padding: 60px;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      position: relative;
-      overflow: hidden;
-    }
-    .certificate::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 5px;
-      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-    .company-name {
-      font-size: 28px;
-      font-weight: 600;
-      color: #1a202c;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-    .certificate-title {
-      font-size: 20px;
-      color: #667eea;
-      font-weight: 500;
-      margin-bottom: 30px;
-    }
-    .decorative-line {
-      width: 100px;
-      height: 3px;
-      background: linear-gradient(90deg, #667eea, #764ba2);
-      margin: 20px auto;
-    }
-    .employee-section {
-      text-align: center;
-      margin: 50px 0;
-    }
-    .certify-text {
-      font-size: 16px;
-      color: #718096;
-      margin-bottom: 20px;
-    }
-    .employee-name {
-      font-size: 36px;
-      font-weight: 700;
-      color: #1a202c;
-      margin: 20px 0;
-    }
-    .employee-title {
-      font-size: 18px;
-      color: #4a5568;
-      margin-bottom: 10px;
-    }
-    .period {
-      font-size: 14px;
-      color: #a0aec0;
-      font-style: italic;
-    }
-    .skills-section {
-      margin: 40px 0;
-      background: #f7fafc;
-      border-radius: 12px;
-      padding: 30px;
-    }
-    .section-title {
-      font-size: 20px;
-      font-weight: 600;
-      color: #2d3748;
-      margin-bottom: 20px;
+    .toolbar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
       display: flex;
-      align-items: center;
-      gap: 10px;
+      gap: 8px;
+      z-index: 10;
     }
-    .skills-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 12px;
-    }
-    .skill-item {
-      background: white;
-      padding: 10px 15px;
+    .toolbar a, .toolbar button {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #111827;
+      color: #fff;
+      border: none;
       border-radius: 8px;
-      border-left: 3px solid #667eea;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .certificate {
+      background: #faf8f2; /* ivory */
+      width: 1123px; /* A4 landscape at 96dpi approx */
+      max-width: 100%;
+      min-height: 794px;
+      padding: 40px 50px 50px 50px;
+      position: relative;
+      color: #2b2b2b;
+      box-shadow: 0 12px 40px rgba(0,0,0,.18);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
-    .skill-name {
-      font-weight: 600;
-      font-size: 13px;
-      color: #2d3748;
-      text-transform: capitalize;
+    /* Ornate double border */
+    .certificate:before, .certificate:after {
+      content: '';
+      position: absolute;
+      inset: 14px;
+      border: 3px solid #bfa66a; /* gold */
     }
-    .skill-level {
-      font-size: 11px;
-      color: #667eea;
-      margin-top: 4px;
-      font-weight: 500;
+    .certificate:after {
+      inset: 28px;
+      border: 1px dashed #d7caa0;
     }
-    .stats-section {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      margin: 30px 0;
+    /* Subtle guilloche pattern */
+    .pattern {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(191,166,106,.12), transparent 40%),
+                  radial-gradient(circle at 20% 30%, rgba(191,166,106,.08), transparent 45%),
+                  radial-gradient(circle at 80% 70%, rgba(191,166,106,.08), transparent 45%);
+      opacity: .6;
+      pointer-events: none;
+    }
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+    }
+    .header { text-align: center; margin-top: 12px; margin-bottom: 20px; }
+    .issuer { font-size: 18px; letter-spacing: 2px; color: #6b7280; text-transform: uppercase; }
+    .title { font-size: 44px; letter-spacing: 1px; color: #8b6b20; margin-top: 6px; }
+    .subtitle { font-size: 16px; color: #4b5563; margin-top: 4px; }
+
+    .recipient {
       text-align: center;
+      margin: 24px 0 20px;
     }
-    .stat-item {
-      padding: 20px;
-      background: linear-gradient(135deg, #667eea15, #764ba215);
+    .lead { font-size: 14px; color: #6b7280; letter-spacing: .4px; }
+    .name { font-size: 40px; font-weight: 700; margin: 10px 0 6px; color: #222; }
+    .role { font-size: 16px; color: #374151; }
+    .period { font-size: 14px; color: #6b7280; margin-top: 8px; font-style: italic; }
+
+    .skills {
+      margin: 18px 0;
+      padding: 14px 16px;
+      border: 1px solid #e5e7eb;
       border-radius: 10px;
+      background: #fff;
     }
-    .stat-value {
-      font-size: 32px;
+    .skills h3 { font-size: 16px; color: #374151; margin-bottom: 10px; letter-spacing: .5px; }
+    .skills-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+    .skill {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex; flex-direction: column; gap: 4px;
+      background: #fcfcfc;
+    }
+    .skill .n { font-size: 13px; color: #111827; }
+    .skill .l { font-size: 11px; color: #8b6b20; text-transform: uppercase; letter-spacing: .6px; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+    .stat { text-align: center; padding: 12px 10px; border: 1px solid #eadfb8; background: #fffdf6; border-radius: 10px; }
+    .stat .v { font-size: 26px; color: #8b6b20; }
+    .stat .k { font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: #6b7280; margin-top: 4px; }
+
+    .bottom-section {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 2px solid #bfa66a;
+    }
+
+    .digital-sig {
+      width: 60%;
+      margin: 0 auto 16px auto;
+      text-align: center;
+      padding: 14px;
+      background: #fffdf6;
+      border: 1px solid #eadfb8;
+      border-radius: 8px;
+    }
+    .digital-sig-title {
+      font-size: 13px;
+      color: #8b6b20;
       font-weight: 700;
-      color: #667eea;
-    }
-    .stat-label {
-      font-size: 12px;
-      color: #718096;
+      margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-top: 5px;
     }
+    .digital-sig-company {
+      font-size: 16px;
+      color: #222;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-style: italic;
+    }
+    .digital-sig-hash {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: #6b7280;
+      word-break: break-all;
+      margin-top: 4px;
+    }
+
     .footer {
-      margin-top: 50px;
-      padding-top: 30px;
-      border-top: 1px solid #e2e8f0;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
+      align-items: center;
+      color: #6b7280;
+      font-size: 10px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-    .verification-info {
-      font-size: 11px;
-      color: #718096;
-      line-height: 1.6;
+    .footer .ids {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
     }
-    .verification-id {
-      font-family: monospace;
-      background: #f7fafc;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 12px;
-      color: #2d3748;
-    }
-    .issue-date {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #a0aec0;
+    .footer .ids span {
+      white-space: nowrap;
     }
     .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      background: #667eea;
-      color: white;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      background: #8b6b20;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      letter-spacing: .8px;
+      white-space: nowrap;
     }
+
     @media print {
-      body {
-        background: white;
-        padding: 0;
-      }
+      @page { size: A4 landscape; margin: 0; }
+      body { background: #fff; padding: 0; }
+      .toolbar { display: none; }
       .certificate {
         box-shadow: none;
-        border-radius: 0;
-        padding: 40px;
+        margin: 0;
+        width: 100%;
+        min-height: auto;
+        height: 100vh;
+        padding: 35px 45px 45px 45px;
       }
     }
   </style>
 </head>
 <body>
+  <div class="toolbar">
+    <a href="/api/certificates/${certificate.id}/pdf" target="_blank" rel="noopener">Download PDF</a>
+    <button onclick="window.print()">Print</button>
+  </div>
   <div class="certificate">
-    <div class="header">
-      <div class="company-name">${certificate.employee.company.name}</div>
-      <div class="certificate-title">Certificate of Professional Skills</div>
-      <div class="decorative-line"></div>
-    </div>
-
-    <div class="employee-section">
-      <div class="certify-text">This is to certify that</div>
-      <div class="employee-name">${certificate.employee.firstName} ${certificate.employee.lastName}</div>
-      ${certificate.employee.title ? `<div class="employee-title">${certificate.employee.title}</div>` : ''}
-      <div class="period">
-        For the period of ${format(new Date(certificate.periodStart), 'MMMM dd, yyyy')}
-        to ${format(new Date(certificate.periodEnd), 'MMMM dd, yyyy')}
+    <div class="pattern"></div>
+    <div class="content-wrapper">
+      <div class="header">
+        <div class="issuer">${certificate.employee.company.name}</div>
+        <div class="title">Certificate of Achievement</div>
+        <div class="subtitle">Professional Skills Certification</div>
       </div>
-    </div>
 
-    ${skillsData?.skills && skillsData.skills.length > 0 ? `
-      <div class="skills-section">
-        <div class="section-title">
-          <span>💻</span>
-          Technical Skills Demonstrated (${skillsData.skills.length})
+      <div class="recipient">
+        <div class="lead">This certifies that</div>
+        <div class="name">${certificate.employee.firstName} ${certificate.employee.lastName}</div>
+        ${certificate.employee.title ? `<div class="role">${certificate.employee.title}</div>` : ''}
+        <div class="period">For the period of ${format(new Date(certificate.periodStart), 'MMMM dd, yyyy')} to ${format(new Date(certificate.periodEnd), 'MMMM dd, yyyy')}</div>
+      </div>
+
+      ${skillsData?.skills && skillsData.skills.length > 0 ? `
+        <div class="skills">
+          <h3>Technical Skills Demonstrated (${skillsData.skills.length})</h3>
+          <div class="skills-grid">
+            ${skillsData.skills.slice(0,12).map((skill: any) => `
+              <div class="skill">
+                <div class="n">${skill.name}</div>
+                <div class="l">${skill.level}</div>
+              </div>
+            `).join('')}
+          </div>
         </div>
-        <div class="skills-grid">
-          ${skillsData.skills.map((skill: any) => `
-            <div class="skill-item">
-              <div class="skill-name">${skill.name}</div>
-              <div class="skill-level">${skill.level}</div>
-            </div>
-          `).join('')}
+      ` : ''}
+
+      <div class="stats">
+        <div class="stat"><div class="v">${skillsData?.skills?.length || 0}</div><div class="k">Skills</div></div>
+        <div class="stat"><div class="v">${achievements?.repositories || 0}</div><div class="k">Projects</div></div>
+        <div class="stat"><div class="v">${achievements?.languages?.length || 0}</div><div class="k">Languages</div></div>
+      </div>
+
+      <div class="bottom-section">
+        <div class="digital-sig">
+            <div class="digital-sig-title">Digitally Signed By</div>
+            <div class="digital-sig-company">${certificate.employee.company.name}</div>
+            <div class="digital-sig-hash">Signature: ${certificate.digitalSignature ? certificate.digitalSignature.substring(0, 32) + '...' : certificate.hashValue ? certificate.hashValue.substring(0, 32) + '...' : certificate.id}</div>
         </div>
-      </div>
-    ` : ''}
 
-    <div class="stats-section">
-      <div class="stat-item">
-        <div class="stat-value">${skillsData?.skills?.length || 0}</div>
-        <div class="stat-label">Skills</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">${achievements?.repositories || 0}</div>
-        <div class="stat-label">Projects</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">${achievements?.languages?.length || 0}</div>
-        <div class="stat-label">Languages</div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div class="verification-info">
-        <div>Certificate ID: <span class="verification-id">${certificate.id}</span></div>
-        <div>Verification ID: <span class="verification-id">${certificate.verificationId}</span></div>
-        <div class="issue-date">Issued on ${format(new Date(certificate.issueDate), 'MMMM dd, yyyy')}</div>
-      </div>
-      <div>
-        <span class="badge">${certificate.status}</span>
+        <div class="footer">
+          <div class="ids">
+            <span>Certificate ID: ${certificate.id}</span>
+            <span>Verification ID: ${certificate.verificationId}</span>
+            <span>Issued ${format(new Date(certificate.issueDate), 'MMMM dd, yyyy')}</span>
+          </div>
+          <span class="badge">${certificate.status}</span>
+        </div>
       </div>
     </div>
   </div>

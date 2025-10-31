@@ -49,29 +49,15 @@ export default async function CompanySettingsPage() {
   const settings = await getCompanySettings(company.id)
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Button variant="ghost" size="sm" asChild className="text-slate-600 hover:text-slate-900">
-                  <Link href="/dashboard">
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Back
-                  </Link>
-                </Button>
-              </div>
-              <h1 className="text-3xl font-bold text-slate-900">Company Settings</h1>
-              <p className="text-slate-600 mt-1">Manage your company preferences and configurations</p>
-            </div>
-          </div>
-        </div>
+    <div className="container mx-auto p-8 animate-fade-in">
+      <div className="max-w-5xl mx-auto space-y-3">
+        <h1 className="text-[2rem] md:text-[2.5rem] font-bold tracking-tight text-slate-900 leading-[1.1]">
+          Company Settings
+        </h1>
+        <p className="text-lg text-slate-600">Manage your company preferences and configurations</p>
       </div>
 
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto mt-6">
         <SettingsForm settings={settings} company={company} />
       </div>
     </div>

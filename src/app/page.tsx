@@ -66,8 +66,8 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white pt-16 pb-24">
+      {/* Hero Section - lighten and align with dashboard */}
+      <section className="relative overflow-hidden gradient-bg-subtle pt-16 pb-20">
         {/* Product Hunt Badge */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <div className="flex justify-center">
@@ -81,28 +81,20 @@ export default function HomePage() {
         <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Headline */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.1]">
-              <span className="text-gray-900">
-                Transform your team's
-              </span>
+            <h1 className="text-5xl sm:text-6xl md:text-6xl font-extrabold tracking-tight leading-[1.1] text-foreground">
+              Your team's growth,
               <br />
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                skills into verified
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                achievements.
-              </span>
+              <span className="text-gradient">in your hands.</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Learn from your team's code activity, take control of skill development and start generating verified certificates.
             </p>
 
             {/* CTA Button */}
-            <div className="pt-4">
-              <Button asChild size="lg" className="h-14 px-10 text-lg rounded-full shadow-xl hover:shadow-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all">
+            <div className="pt-2">
+              <Button asChild size="lg" className="h-12 px-8 text-base">
                 <Link href="/auth/signup?type=company">
                   Try for Free
                 </Link>
@@ -113,7 +105,7 @@ export default function HomePage() {
             <div className="pt-12 pb-8">
               <div className="relative mx-auto max-w-4xl">
                 {/* Background glow */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-200 via-indigo-200 to-purple-200 rounded-3xl blur-3xl opacity-30"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 rounded-3xl blur-3xl opacity-50"></div>
 
                 {/* Phone mockup containers */}
                 <div className="relative flex items-center justify-center gap-6">
@@ -601,24 +593,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-24 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)]" />
-        <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="text-xl text-white/90 font-medium">Get started</h2>
-            <h3 className="text-5xl md:text-6xl font-bold">
-              Your team's growth,
-            </h3>
-            <h3 className="text-5xl md:text-6xl font-bold">
-              in your hands.
-            </h3>
-            <div className="pt-4">
-              <Button asChild size="lg" variant="secondary" className="h-14 px-10 text-lg rounded-full shadow-2xl hover:shadow-3xl">
-                <Link href="/auth/signup?type=company">
-                  Try for Free
-                </Link>
-              </Button>
+      {/* Final CTA - light panel matching dashboard cards */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl border bg-card text-card-foreground shadow-md p-10 text-center card-hover">
+            <div className="space-y-4">
+              <h2 className="text-xl text-muted-foreground font-medium">Get started</h2>
+              <h3 className="text-4xl md:text-5xl font-bold text-foreground">Your team's growth, in your hands.</h3>
+              <div className="pt-2">
+                <Button asChild size="lg" className="h-12 px-8 text-base">
+                  <Link href="/auth/signup?type=company">Try for Free</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>

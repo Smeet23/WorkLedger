@@ -116,7 +116,7 @@ export function Sidebar({ userRole, collapsed = false, onCollapse }: SidebarProp
   return (
     <div
       className={cn(
-        "relative flex flex-col border-r bg-card transition-all duration-300",
+        "sticky top-0 h-screen shrink-0 flex flex-col border-r bg-card transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >

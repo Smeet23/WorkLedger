@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClientPagination } from "@/components/ui/client-pagination"
-import Link from "next/link"
 import {
   BarChart,
   Users,
@@ -15,7 +14,6 @@ import {
   Award,
   Target,
   Lightbulb,
-  ArrowLeft,
   Code,
   Briefcase,
   Building,
@@ -162,27 +160,16 @@ export default function CompanySkillsMatrix() {
   ) || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <Link href="/company" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4">
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Dashboard
-            </Link>
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Team Skills Matrix</h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  Comprehensive view of your team's technical capabilities
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="container mx-auto p-8 space-y-8 animate-fade-in">
+      {/* Page intro aligned with dashboard */}
+      <div className="space-y-2">
+        <h1 className="text-[2rem] md:text-[2.5rem] font-bold tracking-tight text-slate-900 leading-[1.1]">
+          Team Skills Matrix
+        </h1>
+        <p className="text-lg text-slate-600">Comprehensive view of your team's technical capabilities</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <main className="space-y-8">
         {/* Statistics Overview */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <Card>
