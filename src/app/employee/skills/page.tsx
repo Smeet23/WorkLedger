@@ -78,101 +78,85 @@ export default async function SkillProgressPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
         {/* Header Section */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-8 md:p-12 mb-8 shadow-2xl">
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-1">
-                  Skill Progress
-                </h1>
-                <p className="text-white/90">
-                  {skillRecords.length} {skillRecords.length === 1 ? 'skill' : 'skills'} tracked • {averageConfidence}% average confidence
-                </p>
-              </div>
-            </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+              Skill Progress
+            </h1>
+            <p className="text-sm text-gray-600">
+              {skillRecords.length} {skillRecords.length === 1 ? 'skill' : 'skills'} tracked • {averageConfidence}% average confidence
+            </p>
           </div>
         </div>
 
         {/* Statistics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Total Skills */}
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-3xl blur opacity-30 group-hover:opacity-50 transition"></div>
-            <div className="relative bg-white rounded-3xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                  <Code2 className="w-5 h-5 text-white" />
+          <Card className="border border-gray-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Code2 className="w-5 h-5 text-gray-700" />
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{skillRecords.length}</div>
               </div>
-              <div className="text-sm font-medium text-gray-600">Total Skills</div>
+              <div className="text-3xl font-semibold text-gray-900 mb-1">{skillRecords.length}</div>
+              <div className="text-sm text-gray-600">Total Skills</div>
               <div className="text-xs text-gray-500 mt-1">Across all categories</div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Expert Skills */}
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-3xl blur opacity-30 group-hover:opacity-50 transition"></div>
-            <div className="relative bg-white rounded-3xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                  <Award className="w-5 h-5 text-white" />
+          <Card className="border border-gray-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-gray-700" />
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{levelCounts.EXPERT}</div>
               </div>
-              <div className="text-sm font-medium text-gray-600">Expert Skills</div>
+              <div className="text-3xl font-semibold text-gray-900 mb-1">{levelCounts.EXPERT}</div>
+              <div className="text-sm text-gray-600">Expert Skills</div>
               <div className="text-xs text-gray-500 mt-1">Mastery level</div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Average Confidence */}
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur opacity-30 group-hover:opacity-50 transition"></div>
-            <div className="relative bg-white rounded-3xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-white" />
+          <Card className="border border-gray-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-gray-700" />
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{averageConfidence}%</div>
               </div>
-              <div className="text-sm font-medium text-gray-600">Avg Confidence</div>
+              <div className="text-3xl font-semibold text-gray-900 mb-1">{averageConfidence}%</div>
+              <div className="text-sm text-gray-600">Avg Confidence</div>
               <Progress value={averageConfidence} className="mt-2 h-2" />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Categories */}
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl blur opacity-30 group-hover:opacity-50 transition"></div>
-            <div className="relative bg-white rounded-3xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+          <Card className="border border-gray-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-gray-700" />
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{Object.keys(skillsByCategory).length}</div>
               </div>
-              <div className="text-sm font-medium text-gray-600">Categories</div>
+              <div className="text-3xl font-semibold text-gray-900 mb-1">{Object.keys(skillsByCategory).length}</div>
+              <div className="text-sm text-gray-600">Categories</div>
               <div className="text-xs text-gray-500 mt-1">Skill domains</div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Skill Level Distribution */}
-        <Card className="rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden mb-8">
-          <div className="h-2 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400"></div>
-          <CardHeader className="bg-gradient-to-br from-indigo-50 to-purple-50">
+        <Card className="border border-gray-200 mb-6">
+          <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
-                <Target className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <Target className="w-5 h-5 text-gray-700" />
               </div>
               <div>
                 <CardTitle className="text-xl">Skill Level Distribution</CardTitle>
@@ -181,34 +165,21 @@ export default async function SkillProgressPage() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { level: 'EXPERT', color: 'from-green-500 to-emerald-500', textColor: 'text-green-600' },
-                { level: 'ADVANCED', color: 'from-blue-500 to-cyan-500', textColor: 'text-blue-600' },
-                { level: 'INTERMEDIATE', color: 'from-yellow-500 to-orange-500', textColor: 'text-yellow-600' },
-                { level: 'BEGINNER', color: 'from-gray-500 to-slate-500', textColor: 'text-gray-600' }
-              ].map(({ level, color, textColor }) => {
+                { level: 'EXPERT' },
+                { level: 'ADVANCED' },
+                { level: 'INTERMEDIATE' },
+                { level: 'BEGINNER' }
+              ].map(({ level }) => {
                 const count = levelCounts[level as keyof typeof levelCounts]
                 const percentage = skillRecords.length > 0 ? (count / skillRecords.length) * 100 : 0
 
                 return (
-                  <div key={level} className="flex items-center gap-4">
-                    <div className={`w-28 text-sm font-semibold ${textColor}`}>{level}</div>
-                    <div className="flex-1 relative">
-                      <div className="h-8 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${color} transition-all duration-500 flex items-center justify-end pr-3`}
-                          style={{ width: `${percentage}%` }}
-                        >
-                          {count > 0 && (
-                            <span className="text-xs font-bold text-white">{count}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="w-16 text-right text-sm font-semibold text-gray-700">
-                      {Math.round(percentage)}%
-                    </div>
+                  <div key={level} className="text-center">
+                    <div className="text-2xl font-semibold text-gray-900 mb-1">{count}</div>
+                    <div className="text-sm text-gray-600 mb-1">{level}</div>
+                    <div className="text-xs text-gray-500">{Math.round(percentage)}%</div>
                   </div>
                 )
               })}
@@ -218,34 +189,27 @@ export default async function SkillProgressPage() {
 
         {/* Skills by Category */}
         {skillRecords.length === 0 ? (
-          <Card className="rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400"></div>
+          <Card className="border border-gray-200">
             <CardContent className="py-16">
               <div className="text-center max-w-md mx-auto">
-                <div className="flex justify-center mb-8">
-                  <div className="relative">
-                    <div className="w-32 h-32 bg-gradient-to-br from-indigo-200 to-purple-300 rounded-3xl transform rotate-12 animate-pulse" style={{ animationDuration: '3s' }}>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                          <Code className="w-14 h-14 text-indigo-500" />
-                        </div>
-                      </div>
-                    </div>
+                <div className="flex justify-center mb-6">
+                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Code className="w-8 h-8 text-gray-600" />
                   </div>
                 </div>
 
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
                   No Skills Tracked Yet
                 </h3>
-                <p className="text-gray-600 mb-8 leading-relaxed">
+                <p className="text-sm text-gray-600 mb-6">
                   Connect your GitHub account to automatically detect and track your skills from your code contributions
                 </p>
 
                 <Link href="/employee/dashboard">
-                  <Button size="lg" className="rounded-full h-12 px-8 shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
-                    <Zap className="w-5 h-5 mr-2" />
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-6">
+                    <Zap className="w-4 h-4 mr-2" />
                     Connect GitHub
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
               </div>
@@ -254,17 +218,16 @@ export default async function SkillProgressPage() {
         ) : (
           <>
             {Object.entries(skillsByCategory).map(([category, skills]) => (
-              <Card key={category} className="rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden mb-6">
-                <div className="h-2 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400"></div>
-                <CardHeader className="bg-gradient-to-br from-indigo-50 to-purple-50">
+              <Card key={category} className="border border-gray-200 mb-6">
+                <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                        <Code2 className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <Code2 className="w-5 h-5 text-gray-700" />
                       </div>
                       <CardTitle className="text-xl">{category}</CardTitle>
                     </div>
-                    <Badge className="bg-indigo-500 text-white text-lg px-4 py-1">{skills.length}</Badge>
+                    <Badge className="bg-gray-700 text-white text-lg px-4 py-1">{skills.length}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -272,7 +235,7 @@ export default async function SkillProgressPage() {
                     {skills.map((record) => (
                       <div
                         key={record.id}
-                        className="group p-5 bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-100 hover:border-indigo-300 hover:shadow-lg transition-all"
+                        className="group p-5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
@@ -283,14 +246,7 @@ export default async function SkillProgressPage() {
                               </p>
                             )}
                           </div>
-                          <Badge
-                            className={
-                              record.level === 'EXPERT' ? 'bg-green-500 text-white' :
-                              record.level === 'ADVANCED' ? 'bg-blue-500 text-white' :
-                              record.level === 'INTERMEDIATE' ? 'bg-yellow-500 text-white' :
-                              'bg-gray-500 text-white'
-                            }
-                          >
+                          <Badge className="bg-gray-700 text-white">
                             {record.level}
                           </Badge>
                         </div>
@@ -307,7 +263,7 @@ export default async function SkillProgressPage() {
 
                         <div className="flex flex-wrap items-center gap-2 mt-3">
                           {record.isAutoDetected && (
-                            <Badge variant="outline" className="text-xs border-indigo-300 text-indigo-700">
+                            <Badge variant="outline" className="text-xs">
                               <Star className="w-3 h-3 mr-1" />
                               Auto-detected
                             </Badge>
@@ -326,12 +282,11 @@ export default async function SkillProgressPage() {
             ))}
 
             {/* Recent Activity */}
-            <Card className="rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden">
-              <div className="h-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400"></div>
-              <CardHeader className="bg-gradient-to-br from-green-50 to-emerald-50">
+            <Card className="border border-gray-200">
+              <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
-                    <TrendingUp className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-gray-700" />
                   </div>
                   <div>
                     <CardTitle className="text-xl">Recent Skill Activity</CardTitle>
@@ -343,7 +298,7 @@ export default async function SkillProgressPage() {
                 {recentActivity.length > 0 ? (
                   <div className="space-y-3">
                     {recentActivity.map((commit) => (
-                      <div key={commit.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-100 hover:border-green-300 hover:shadow-md transition-all">
+                      <div key={commit.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">
                             {commit.message.split('\n')[0]}
@@ -351,7 +306,7 @@ export default async function SkillProgressPage() {
                           <div className="flex flex-wrap items-center gap-3 mt-2">
                             <span className="text-xs text-gray-600">{commit.repository.name}</span>
                             {commit.repository.primaryLanguage && (
-                              <Badge className="bg-green-100 text-green-700 text-xs">
+                              <Badge variant="outline" className="text-xs">
                                 {commit.repository.primaryLanguage}
                               </Badge>
                             )}
@@ -363,8 +318,8 @@ export default async function SkillProgressPage() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
-                      <Calendar className="w-10 h-10 text-gray-400" />
+                    <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                      <Calendar className="w-8 h-8 text-gray-400" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">No recent activity</h3>
                     <p className="text-sm text-gray-600">Sync your GitHub to see activity</p>

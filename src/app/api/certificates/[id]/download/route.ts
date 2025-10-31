@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     // Check authentication
@@ -14,9 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Handle params which might be a Promise in newer Next.js versions
+    const resolvedParams = params instanceof Promise ? await params : params
+
     // Get certificate
     const certificate = await db.certificate.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         employee: {
           include: { company: true }

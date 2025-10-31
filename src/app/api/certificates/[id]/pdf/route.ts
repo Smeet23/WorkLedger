@@ -6,7 +6,7 @@ import QRCode from 'qrcode'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = await getServerSession()
@@ -14,9 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Handle params which might be a Promise in newer Next.js versions
+    const resolvedParams = params instanceof Promise ? await params : params
+
     // Fetch certificate with all related data
     const certificate = await db.certificate.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         employee: {
           include: {
@@ -57,11 +60,12 @@ export async function GET(
       margin: 1
     })
 
-    // Create PDF document
+    // Create PDF document - A4 Landscape to match HTML
     const doc = new PDFDocument({
-      size: 'LETTER',
-      layout: 'portrait',
-      margin: 50,
+      size: 'A4',
+      layout: 'landscape',
+      margin: 0,
+      autoFirstPage: true,
       info: {
         Title: 'Professional Skills Certificate',
         Author: certificate.company.name,
@@ -69,162 +73,324 @@ export async function GET(
         Creator: 'WorkLedger'
       }
     })
+    
+    // Prevent automatic page breaks
+    doc.switchToPage(0)
 
-    // Collect PDF chunks
+    // Collect PDF chunks - need to handle both Buffer and Uint8Array
     const chunks: Buffer[] = []
-    doc.on('data', (chunk) => chunks.push(chunk))
+    doc.on('data', (chunk: Buffer | Uint8Array) => {
+      chunks.push(Buffer.from(chunk))
+    })
 
-    // Define colors
-    const primaryColor = '#2563eb'
-    const textColor = '#1f2937'
+    // Define colors matching HTML design
+    const goldColor = '#bfa66a'
+    const lightGold = '#eadfb8'
+    const ivoryBg = '#faf8f2'
+    const textColor = '#2b2b2b'
     const grayColor = '#6b7280'
-
-    // Add decorative border
-    doc.lineWidth(2)
-       .rect(30, 30, doc.page.width - 60, doc.page.height - 60)
-       .stroke(primaryColor)
-
-    // Company header
-    doc.fontSize(24)
-       .fillColor(primaryColor)
-       .text(certificate.company.name, 50, 70, { align: 'center' })
-
-    doc.fontSize(10)
-       .fillColor(grayColor)
-       .text('proudly presents this', 50, 110, { align: 'center' })
-
-    // Certificate title
-    doc.fontSize(32)
-       .fillColor(textColor)
-       .font('Helvetica-Bold')
-       .text('CERTIFICATE OF ACHIEVEMENT', 50, 140, { align: 'center' })
-
-    doc.fontSize(12)
-       .font('Helvetica')
-       .fillColor(grayColor)
-       .text('in Professional Skills & Technical Competencies', 50, 185, { align: 'center' })
-
-    // Decorative line
-    doc.moveTo(150, 210)
-       .lineTo(doc.page.width - 150, 210)
-       .stroke(primaryColor)
-
-    // Recipient name
-    doc.fontSize(10)
-       .fillColor(grayColor)
-       .text('This certificate is awarded to', 50, 240, { align: 'center' })
-
-    doc.fontSize(28)
-       .fillColor(textColor)
-       .font('Helvetica-Bold')
-       .text(`${certificate.employee.firstName} ${certificate.employee.lastName}`, 50, 260, { align: 'center' })
-
-    if (certificate.employee.title) {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .fillColor(grayColor)
-         .text(certificate.employee.title, 50, 295, { align: 'center' })
-    }
-
+    const darkGold = '#8b6b20'
+    
     // Certificate details
     const skillsData = certificate.skillsData as any
     const achievements = certificate.achievements as any
+    const { format } = await import('date-fns')
 
-    doc.fontSize(11)
+    // Background color (ivory)
+    doc.rect(0, 0, doc.page.width, doc.page.height)
+       .fill(ivoryBg)
+
+    // Outer gold border
+    doc.lineWidth(3)
+       .rect(18, 18, doc.page.width - 36, doc.page.height - 36)
+       .stroke(goldColor)
+
+    // Inner dashed border
+    doc.lineWidth(1)
+       .dash(5, { space: 3 })
+       .rect(34, 34, doc.page.width - 68, doc.page.height - 68)
+       .stroke('#d7caa0')
+       .undash()
+
+    // Padding for content - more compact
+    const padding = 40
+    const contentWidth = doc.page.width - (padding * 2)
+    const pageHeight = doc.page.height
+    let yPos = 45
+
+    // Header
+    doc.fontSize(16)
+       .fillColor(grayColor)
+       .text(certificate.employee.company.name.toUpperCase(), padding, yPos, {
+         align: 'center'
+       })
+    
+    yPos += 28
+    doc.fontSize(38)
+       .fillColor(darkGold)
+       .font('Helvetica-Bold')
+       .text('Certificate of Achievement', padding, yPos, {
+         align: 'center'
+       })
+
+    yPos += 30
+    doc.fontSize(14)
+       .fillColor('#4b5563')
+       .font('Helvetica')
+       .text('Professional Skills Certification', padding, yPos, {
+         align: 'center'
+       })
+
+    yPos += 40
+
+    // Recipient section
+    doc.fontSize(12)
+       .fillColor(grayColor)
+       .text('This certifies that', padding, yPos, {
+         align: 'center'
+       })
+
+    yPos += 20
+    doc.fontSize(34)
        .fillColor(textColor)
-       .text('For demonstrating proficiency in', 50, 330, { align: 'center' })
-
-    // Skills summary box
-    const boxTop = 360
-    doc.rect(100, boxTop, doc.page.width - 200, 100)
-       .fillAndStroke('#f3f4f6', '#e5e7eb')
-
-    doc.fillColor(textColor)
-       .fontSize(10)
-       .text('Skills Certified', 120, boxTop + 15)
-       .fontSize(20)
        .font('Helvetica-Bold')
-       .text(skillsData?.count?.toString() || '0', 120, boxTop + 30)
+       .text(`${certificate.employee.firstName} ${certificate.employee.lastName}`, padding, yPos, {
+         align: 'center'
+       })
 
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text('Projects', 250, boxTop + 15)
-       .fontSize(20)
-       .font('Helvetica-Bold')
-       .text(achievements?.repositories?.toString() || '0', 250, boxTop + 30)
-
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text('Languages', 350, boxTop + 15)
-       .fontSize(20)
-       .font('Helvetica-Bold')
-       .text(achievements?.languages?.length?.toString() || '0', 350, boxTop + 30)
-
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text('Categories', 450, boxTop + 15)
-       .fontSize(20)
-       .font('Helvetica-Bold')
-       .text(skillsData?.categories?.length?.toString() || '0', 450, boxTop + 30)
-
-    // Primary languages
-    if (achievements?.languages && achievements.languages.length > 0) {
-      doc.fontSize(9)
+    yPos += 28
+    if (certificate.employee.title) {
+      doc.fontSize(14)
+         .fillColor('#374151')
          .font('Helvetica')
+         .text(certificate.employee.title, padding, yPos, {
+           align: 'center'
+         })
+      yPos += 16
+    }
+
+    doc.fontSize(12)
+       .fillColor(grayColor)
+       .font('Helvetica-Oblique')
+       .text(
+         `For the period of ${format(new Date(certificate.periodStart), 'MMMM dd, yyyy')} to ${format(new Date(certificate.periodEnd), 'MMMM dd, yyyy')}`,
+         padding,
+         yPos,
+         { align: 'center' }
+       )
+
+    yPos += 38
+
+    // Skills section - compact
+    if (skillsData?.skills && skillsData.skills.length > 0) {
+      const skills = skillsData.skills.slice(0, 12)
+      const skillsTop = yPos
+      const skillsBoxHeight = Math.ceil(skills.length / 4) * 28 + 50
+      
+      // Skills box background
+      doc.rect(padding + 14, skillsTop, contentWidth - 28, skillsBoxHeight)
+         .fillAndStroke('#ffffff', '#e5e7eb')
+         .lineWidth(1)
+
+      yPos += 16
+      doc.fontSize(14)
+         .fillColor('#374151')
+         .font('Helvetica-Bold')
+         .text(`Technical Skills Demonstrated (${skillsData.skills.length})`, padding + 20, yPos)
+
+      yPos += 24
+      
+      // Skills grid - 4 columns, compact
+      const cols = 4
+      const skillWidth = (contentWidth - 40) / cols
+      const skillHeight = 26
+      
+      skills.forEach((skill: any, index: number) => {
+        const col = index % cols
+        const row = Math.floor(index / cols)
+        const x = padding + 20 + (col * skillWidth) + 4
+        const y = yPos + (row * skillHeight)
+
+        // Skill box
+        doc.rect(x, y, skillWidth - 8, 24)
+           .fillAndStroke('#fcfcfc', '#e5e7eb')
+           .lineWidth(1)
+
+        // Skill name
+        doc.fontSize(11)
+           .fillColor(textColor)
+           .font('Helvetica')
+           .text(skill.name || 'N/A', x + 6, y + 4, {
+             width: skillWidth - 20,
+             ellipsis: true
+           })
+
+        // Skill level
+        doc.fontSize(9)
+           .fillColor(darkGold)
+           .font('Helvetica-Bold')
+           .text((skill.level || '').toUpperCase(), x + 6, y + 14, {
+             width: skillWidth - 20,
+             ellipsis: true
+           })
+      })
+
+      yPos += (Math.ceil(skills.length / cols) * skillHeight) + 16
+    }
+
+    // Stats section - compact
+    const statsTop = yPos
+    const statWidth = (contentWidth - 28) / 3
+    const statHeight = 55
+
+    // Stat boxes
+    for (let i = 0; i < 3; i++) {
+      const x = padding + 14 + (i * statWidth)
+      doc.rect(x, statsTop, statWidth - 10, statHeight)
+         .fillAndStroke('#fffdf6', lightGold)
+         .lineWidth(1)
+
+      let label = ''
+      let value = ''
+      
+      if (i === 0) {
+        label = 'SKILLS'
+        value = (skillsData?.skills?.length || 0).toString()
+      } else if (i === 1) {
+        label = 'PROJECTS'
+        value = (achievements?.repositories || 0).toString()
+      } else {
+        label = 'LANGUAGES'
+        value = (achievements?.languages?.length || 0).toString()
+      }
+
+      // Value
+      doc.fontSize(24)
+         .fillColor(darkGold)
+         .font('Helvetica-Bold')
+         .text(value, x, statsTop + 12, {
+           width: statWidth - 10,
+           align: 'center'
+         })
+
+      // Label
+      doc.fontSize(10)
          .fillColor(grayColor)
-         .text('Primary Languages: ' + achievements.languages.join(', '), 120, boxTop + 70, {
-           width: doc.page.width - 240,
+         .font('Helvetica-Bold')
+         .text(label, x, statsTop + 40, {
+           width: statWidth - 10,
            align: 'center'
          })
     }
 
-    // Period
-    doc.fontSize(10)
-       .fillColor(textColor)
-       .text('Certification Period', 50, 490, { align: 'center' })
+    yPos = statsTop + statHeight + 24
 
+    // Bottom section with border
+    const borderY = yPos
+    doc.lineWidth(2)
+       .moveTo(padding, borderY)
+       .lineTo(doc.page.width - padding, borderY)
+       .stroke(goldColor)
+
+    yPos += 22
+
+    // Digital signature - compact
+    const sigWidth = contentWidth * 0.55
+    const sigX = (doc.page.width - sigWidth) / 2
+    
+    doc.rect(sigX, yPos, sigWidth, 58)
+       .fillAndStroke('#fffdf6', lightGold)
+       .lineWidth(1)
+
+    yPos += 14
     doc.fontSize(11)
+       .fillColor(darkGold)
        .font('Helvetica-Bold')
-       .text(
-         `${new Date(certificate.periodStart).toLocaleDateString()} - ${new Date(certificate.periodEnd).toLocaleDateString()}`,
-         50, 510,
-         { align: 'center' }
-       )
+       .text('DIGITALLY SIGNED BY', sigX, yPos, {
+         width: sigWidth,
+         align: 'center'
+       })
 
-    // Issue date
-    doc.fontSize(10)
-       .font('Helvetica')
+    yPos += 14
+    doc.fontSize(14)
+       .fillColor(textColor)
+       .font('Helvetica-Bold')
+       .text(certificate.employee.company.name, sigX, yPos, {
+         width: sigWidth,
+         align: 'center'
+       })
+
+    yPos += 12
+    const sigHash = certificate.digitalSignature 
+      ? certificate.digitalSignature.substring(0, 28) + '...'
+      : certificate.hashValue 
+      ? certificate.hashValue.substring(0, 28) + '...'
+      : certificate.id.substring(0, 28) + '...'
+
+    doc.fontSize(9)
        .fillColor(grayColor)
-       .text(`Issued on ${new Date(certificate.issueDate).toLocaleDateString()}`, 50, 540, { align: 'center' })
+       .font('Courier')
+       .text(`Signature: ${sigHash}`, sigX, yPos, {
+         width: sigWidth,
+         align: 'center'
+       })
 
-    // QR Code and verification
-    if (qrCodeBuffer) {
-      doc.image(qrCodeBuffer, doc.page.width / 2 - 50, 570, { width: 100 })
+    yPos += 40
+
+    // Footer - ensure it fits
+    if (yPos > pageHeight - 40) {
+      yPos = pageHeight - 40
     }
-
-    doc.fontSize(8)
+    
+    doc.fontSize(9)
        .fillColor(grayColor)
-       .text('Scan to verify', 50, 680, { align: 'center' })
+       .font('Helvetica')
+       .moveTo(padding, yPos)
+       .lineTo(doc.page.width - padding, yPos)
+       .stroke('#e5e7eb')
+       .lineWidth(1)
 
-    doc.fontSize(7)
-       .text(`Verification ID: ${certificate.verificationId}`, 50, 695, { align: 'center' })
+    yPos += 14
+    const footerText = `Certificate ID: ${certificate.id}  Verification ID: ${certificate.verificationId}  Issued ${format(new Date(certificate.issueDate), 'MMMM dd, yyyy')}`
+    doc.fontSize(9)
+       .fillColor(grayColor)
+       .text(footerText, padding, yPos, {
+         width: contentWidth - 80,
+         align: 'left'
+       })
 
-    // Footer
-    doc.fontSize(8)
-       .text('This certificate has been digitally signed and can be verified at', 50, 730, { align: 'center' })
-    doc.fillColor(primaryColor)
-       .text(verificationUrl, 50, 742, { align: 'center', link: verificationUrl })
+    // Status badge on right
+    doc.rect(doc.page.width - padding - 55, yPos - 4, 48, 18)
+       .fill(darkGold)
+    
+    doc.fontSize(9)
+       .fillColor('#ffffff')
+       .font('Helvetica-Bold')
+       .text(certificate.status, doc.page.width - padding - 55, yPos, {
+         width: 48,
+         align: 'center'
+       })
+
+    // Wait for PDF to be generated before ending
+    const pdfPromise = new Promise<Buffer>((resolve, reject) => {
+      doc.on('end', () => {
+        try {
+          const pdfBuffer = Buffer.concat(chunks)
+          resolve(pdfBuffer)
+        } catch (error) {
+          reject(error)
+        }
+      })
+      doc.on('error', reject)
+    })
 
     // End document
     doc.end()
 
-    // Wait for PDF to be generated
-    await new Promise<void>((resolve) => doc.on('end', resolve))
+    // Wait for PDF buffer to be ready
+    const pdfBuffer = await pdfPromise
 
-    // Create response with PDF
-    const pdfBuffer = Buffer.concat(chunks)
-
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
@@ -233,10 +399,18 @@ export async function GET(
       }
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to generate PDF:', error)
+    console.error('Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name
+    })
     return NextResponse.json(
-      { error: 'Failed to generate PDF certificate' },
+      { 
+        error: 'Failed to generate PDF certificate',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     )
   }

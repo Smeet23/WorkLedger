@@ -10,7 +10,6 @@ import {
   Award,
   BarChart3,
   Settings,
-  Building2,
   GitBranch,
   FileText,
   Zap,
@@ -78,8 +77,8 @@ const companyNavItems: NavItem[] = [
 
 const employeeNavItems: NavItem[] = [
   {
-    title: "Overview",
-    href: "/employee",
+    title: "Dashboard",
+    href: "/employee/dashboard",
     icon: LayoutDashboard,
   },
   {
@@ -116,23 +115,23 @@ export function Sidebar({ userRole, collapsed = false, onCollapse }: SidebarProp
   return (
     <div
       className={cn(
-        "sticky top-0 h-screen shrink-0 flex flex-col border-r bg-card transition-all duration-300",
+        "sticky top-0 h-screen shrink-0 flex flex-col border-r bg-white transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b px-4">
+      <div className="flex h-16 items-center border-b px-6">
         {!collapsed && (
           <Link href={userRole === "company_admin" ? "/dashboard" : "/employee"} className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+              <span className="text-sm font-bold text-white">WL</span>
             </div>
-            <span className="text-lg font-bold text-gradient">WorkLedger</span>
+            <span className="text-lg font-semibold text-gray-900">WorkLedger</span>
           </Link>
         )}
         {collapsed && (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Building2 className="h-5 w-5" />
+          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+            <span className="text-sm font-bold text-white">WL</span>
           </div>
         )}
       </div>
@@ -149,19 +148,19 @@ export function Sidebar({ userRole, collapsed = false, onCollapse }: SidebarProp
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
                   collapsed && "justify-center"
                 )}
               >
-                <Icon className={cn("h-5 w-5 shrink-0", isActive && "text-primary-foreground")} />
+                <Icon className={cn("h-5 w-5 shrink-0", isActive ? "text-blue-700" : "text-gray-400")} />
                 {!collapsed && (
                   <>
                     <span className="flex-1">{item.title}</span>
                     {item.badge && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
                         {item.badge}
                       </span>
                     )}

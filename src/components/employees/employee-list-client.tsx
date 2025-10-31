@@ -8,6 +8,7 @@ import { Users, Mail, Clock } from "lucide-react"
 import Link from "next/link"
 import { CopyInvitationLink } from "@/components/ui/copy-invitation-link"
 import { ClientPagination } from "@/components/ui/client-pagination"
+import { format } from 'date-fns'
 
 const ITEMS_PER_PAGE = 10
 
@@ -122,7 +123,7 @@ export function EmployeeListClient({ invitations, employees }: EmployeeListClien
                                 <span className="text-xs text-slate-500">• {invitation.title}</span>
                               )}
                               <span className="text-xs text-slate-500">
-                                • Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                                • Expires {format(new Date(invitation.expiresAt), 'MM/dd/yyyy')}
                               </span>
                             </div>
                           </div>

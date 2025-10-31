@@ -183,7 +183,7 @@ export default async function CompanyDashboard() {
               <CardTitle className="text-sm font-medium text-gray-500">Avg Skills/Employee</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-600">
+              <div className="text-3xl font-bold text-indigo-600">
                 {employeeCount > 0 ? Math.round(skillCount / employeeCount) : 0}
               </div>
               <p className="text-xs text-gray-500 mt-1">Company average</p>

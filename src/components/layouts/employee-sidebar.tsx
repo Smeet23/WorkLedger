@@ -14,7 +14,7 @@ import {
 
 const navigation = [
   {
-    name: "Overview",
+    name: "Dashboard",
     href: "/employee/dashboard",
     icon: LayoutDashboard,
   },
@@ -47,12 +47,6 @@ const navigation = [
 
 export function EmployeeSidebar() {
   const pathname = usePathname()
-  
-  // Find the active navigation item to show in breadcrumb
-  const activeItem = navigation.find(
-    (item) => pathname === item.href || pathname?.startsWith(item.href + "/")
-  )
-  const breadcrumbLabel = activeItem ? activeItem.name : "Dashboard"
 
   return (
     <div className="flex h-full w-64 flex-col fixed left-0 top-0 border-r bg-white">
@@ -64,15 +58,6 @@ export function EmployeeSidebar() {
           </div>
           <span className="text-lg font-semibold text-gray-900">WorkLedger</span>
         </Link>
-      </div>
-
-      {/* Breadcrumb */}
-      <div className="border-b px-6 py-3">
-        <div className="flex items-center space-x-2 text-sm text-gray-500">
-          <Link href="/employee" className="hover:text-gray-900">Employee Portal</Link>
-          <span>›</span>
-          <span className="text-gray-900 font-medium">{breadcrumbLabel}</span>
-        </div>
       </div>
 
       {/* Navigation */}
