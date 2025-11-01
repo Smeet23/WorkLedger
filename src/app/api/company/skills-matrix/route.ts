@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 60 // Cache for 60 seconds
 
 export async function GET() {
   try {
@@ -227,6 +228,10 @@ export async function GET() {
             name: record.skill.name,
             lastUsed: record.lastUsed
           }))
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       }
     })
   } catch (error) {

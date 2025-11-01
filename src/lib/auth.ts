@@ -27,7 +27,7 @@ export const authConfig = {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
-  debug: process.env.NODE_ENV === 'development',
+  debug: false,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -71,8 +71,6 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }: any) {
       if (user) {
-        console.log('=== JWT CALLBACK (with user) ===')
-        console.log('User:', user)
         return {
           ...token,
           role: user.role,
@@ -80,13 +78,9 @@ export const authConfig = {
           lastName: user.lastName,
         }
       }
-      console.log('=== JWT CALLBACK (token only) ===')
-      console.log('Token role:', token.role)
       return token
     },
     async session({ session, token }: any) {
-      console.log('=== SESSION CALLBACK ===')
-      console.log('Token:', token)
       const result = {
         ...session,
         user: {
@@ -97,7 +91,6 @@ export const authConfig = {
           lastName: token.lastName,
         },
       }
-      console.log('Session result:', result)
       return result
     },
   },

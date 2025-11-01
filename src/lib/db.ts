@@ -66,10 +66,10 @@ function normalizeDatabaseUrl(url: string | undefined): string | undefined {
 
       const normalizedUrl = urlObj.toString()
       
-      // Log normalized URL (without password) to verify configuration
-      const safeUrl = normalizedUrl.replace(/:([^:@]+)@/, ':****@')
-      if (isServerless) {
-        console.log('🔧 Prisma Configuration for Serverless:', {
+      // Log normalized URL (without password) to verify configuration (development only)
+      if (process.env.NODE_ENV === 'development') {
+        const safeUrl = normalizedUrl.replace(/:([^:@]+)@/, ':****@')
+        console.log('🔧 Prisma Configuration:', {
           hasPgbouncer: normalizedUrl.includes('pgbouncer=true'),
           port: urlObj.port,
           connectionLimit: urlObj.searchParams.get('connection_limit'),
@@ -113,7 +113,7 @@ if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
 // Configure Prisma for serverless environments (Vercel, etc.)
 // This prevents prepared statement conflicts when using connection poolers (pgBouncer)
 const prismaClientOptions: ConstructorParameters<typeof PrismaClient>[0] = {
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   // Explicitly set datasource to ensure Prisma uses the normalized connection string
   // The normalized URL includes pgbouncer=true which tells Prisma Engine to disable prepared statements
   datasources: {
@@ -142,11 +142,6 @@ export const db =
 // This prevents connection pool exhaustion and ensures consistent configuration
 if (!globalForPrisma.prisma) {
   globalForPrisma.prisma = db
-  
-  // Log successful initialization in serverless
-  if (isServerless) {
-    console.log('✅ Prisma Client initialized with pgBouncer configuration')
-  }
 }
 
 // Handle graceful disconnection for serverless environments
