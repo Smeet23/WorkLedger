@@ -424,6 +424,11 @@ model Invitation {
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  // GitHub linking (NEW for Phase 2)
+  suggestedGithubUsername String?
+  githubOrgMemberId       String?
+  githubOrgMember         GitHubOrganizationMember? @relation(fields: [githubOrgMemberId], references: [id], onDelete: SetNull)
+
   // Invitation status
   status      String   @default("pending") // pending, accepted, expired, cancelled
   invitedBy   String   // Email of the person who sent the invitation
@@ -437,6 +442,7 @@ model Invitation {
   @@index([token])
   @@index([email, companyId])
   @@index([companyId, status])
+  @@index([githubOrgMemberId])
   @@map("invitations")
 }
 
@@ -802,6 +808,9 @@ model GitHubOrganizationMember {
   // Organization role
   orgRole         String?   // 'member', 'admin', 'owner'
   orgPermissions  Json?
+
+  // Invitations linked to this member (NEW for Phase 2)
+  invitations     Invitation[]
 
   // Status
   isActive        Boolean   @default(true)

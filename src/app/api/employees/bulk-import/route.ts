@@ -72,11 +72,33 @@ export async function POST(request: Request) {
       )
     }
 
+    // NEW: Phase 2.5 - Fetch GitHub org members for matching
+    const githubOrgMembers = await db.gitHubOrganizationMember.findMany({
+      where: {
+        companyId,
+        isActive: true,
+        employeeId: null // Only unlinked members
+      }
+    })
+
+    // Create email → GitHub member map
+    const githubEmailMap = new Map(
+      githubOrgMembers
+        .filter(m => m.githubEmail)
+        .map(m => [m.githubEmail!.toLowerCase(), m])
+    )
+
+    // Track statistics
+    let withGitHub = 0
+    let withoutGitHub = 0
+
     // Import employees in a transaction - create invitations instead
     const result = await db.$transaction(async (tx) => {
       const createdInvitations = []
 
       for (const employee of newEmployees) {
+        // NEW: Try to match with GitHub org member by email
+        const githubMember = githubEmailMap.get(employee.email.toLowerCase())
         // Check if there's already a pending invitation
         const existingInvitation = await tx.invitation.findFirst({
           where: {
@@ -85,6 +107,13 @@ export async function POST(request: Request) {
             status: "pending"
           }
         })
+
+        // Track statistics
+        if (githubMember) {
+          withGitHub++
+        } else {
+          withoutGitHub++
+        }
 
         if (existingInvitation) {
           // Update existing invitation
@@ -97,11 +126,17 @@ export async function POST(request: Request) {
               title: employee.title,
               department: employee.department,
               invitedBy: session.user.email,
+              suggestedGithubUsername: githubMember?.githubUsername || null, // NEW
+              githubOrgMemberId: githubMember?.id || null, // NEW
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Reset expiry
               updatedAt: new Date()
             }
           })
-          createdInvitations.push(updatedInvitation)
+          createdInvitations.push({
+            ...updatedInvitation,
+            hasGitHub: !!githubMember,
+            githubUsername: githubMember?.githubUsername
+          })
         } else {
           // Create new invitation
           const invitation = await tx.invitation.create({
@@ -114,10 +149,16 @@ export async function POST(request: Request) {
               department: employee.department,
               companyId: companyId,
               invitedBy: session.user.email,
+              suggestedGithubUsername: githubMember?.githubUsername || null, // NEW
+              githubOrgMemberId: githubMember?.id || null, // NEW
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
             }
           })
-          createdInvitations.push(invitation)
+          createdInvitations.push({
+            ...invitation,
+            hasGitHub: !!githubMember,
+            githubUsername: githubMember?.githubUsername
+          })
         }
       }
 
@@ -139,6 +180,12 @@ export async function POST(request: Request) {
       message: `Successfully created ${result.length} invitations`,
       invitationsCount: result.length,
       skippedCount: employees.length - newEmployees.length,
+      githubStats: { // NEW: Phase 2.5
+        withGitHub,
+        withoutGitHub,
+        total: result.length,
+        matchRate: result.length > 0 ? Math.round((withGitHub / result.length) * 100) : 0
+      },
       details: {
         invitations: result.map(inv => ({
           id: inv.id,
@@ -147,6 +194,8 @@ export async function POST(request: Request) {
           lastName: inv.lastName,
           role: inv.role,
           token: inv.token,
+          hasGitHub: inv.hasGitHub, // NEW
+          githubUsername: inv.githubUsername, // NEW
           invitationUrl: `${process.env.NEXTAUTH_URL}/auth/accept-invitation/${inv.token}`
         })),
         skipped: existingEmailSet.size > 0 ? Array.from(existingEmailSet) : []

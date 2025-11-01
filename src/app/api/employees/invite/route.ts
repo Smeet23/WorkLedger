@@ -12,6 +12,7 @@ const inviteEmployeeSchema = z.object({
   department: z.string().optional(),
   companyId: z.string(),
   companyDomain: z.string(),
+  githubUsername: z.string().optional(), // NEW: Phase 2
 })
 
 export async function POST(request: Request) {
@@ -71,6 +72,18 @@ export async function POST(request: Request) {
     })
 
     if (existingInvitation) {
+      // NEW: Phase 2 - Find GitHub org member if username provided
+      let githubOrgMember = null
+      if (validatedData.githubUsername) {
+        githubOrgMember = await db.gitHubOrganizationMember.findFirst({
+          where: {
+            companyId: validatedData.companyId,
+            githubUsername: validatedData.githubUsername,
+            isActive: true
+          }
+        })
+      }
+
       // Update the existing invitation with new details
       await db.invitation.update({
         where: { id: existingInvitation.id },
@@ -81,6 +94,8 @@ export async function POST(request: Request) {
           title: validatedData.title,
           department: validatedData.department,
           invitedBy: session.user.email,
+          suggestedGithubUsername: validatedData.githubUsername || null, // NEW
+          githubOrgMemberId: githubOrgMember?.id || null, // NEW
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Reset expiry to 7 days
           updatedAt: new Date()
         }
@@ -104,6 +119,18 @@ export async function POST(request: Request) {
       })
     }
 
+    // NEW: Phase 2 - Find GitHub org member if username provided
+    let githubOrgMember = null
+    if (validatedData.githubUsername) {
+      githubOrgMember = await db.gitHubOrganizationMember.findFirst({
+        where: {
+          companyId: validatedData.companyId,
+          githubUsername: validatedData.githubUsername,
+          isActive: true
+        }
+      })
+    }
+
     // Create a new invitation
     const invitation = await db.invitation.create({
       data: {
@@ -115,6 +142,8 @@ export async function POST(request: Request) {
         department: validatedData.department,
         companyId: validatedData.companyId,
         invitedBy: session.user.email,
+        suggestedGithubUsername: validatedData.githubUsername || null, // NEW
+        githubOrgMemberId: githubOrgMember?.id || null, // NEW
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
       }
     })

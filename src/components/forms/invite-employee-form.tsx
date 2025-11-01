@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Mail, User, Briefcase, Building } from "lucide-react"
+import { Mail, User, Briefcase, Building, Github } from "lucide-react"
 
 interface InviteEmployeeFormProps {
   companyId: string
@@ -31,11 +31,32 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
     role: '',
     title: '',
     department: '',
+    githubUsername: '', // NEW: Phase 2
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [githubMembers, setGithubMembers] = useState<any[]>([]) // NEW: Phase 2
+  const [loadingMembers, setLoadingMembers] = useState(true) // NEW: Phase 2
   const router = useRouter()
+
+  // NEW: Phase 2 - Fetch GitHub org members
+  useEffect(() => {
+    async function fetchGithubMembers() {
+      try {
+        const response = await fetch('/api/github/org-members')
+        const data = await response.json()
+        if (data.success) {
+          setGithubMembers(data.data.unlinked || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch GitHub members:', error)
+      } finally {
+        setLoadingMembers(false)
+      }
+    }
+    fetchGithubMembers()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,6 +92,7 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
         role: '',
         title: '',
         department: '',
+        githubUsername: '', // NEW: Phase 2
       })
 
       // Redirect after a short delay
@@ -194,6 +216,41 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
             className="pl-10"
           />
         </div>
+      </div>
+
+      {/* GitHub Username - NEW: Phase 2 */}
+      <div className="space-y-2">
+        <Label htmlFor="githubUsername">GitHub Username (Optional)</Label>
+        <Select onValueChange={(value) => handleInputChange('githubUsername', value)} value={formData.githubUsername}>
+          <SelectTrigger className="w-full">
+            <div className="flex items-center gap-2">
+              <Github className="h-4 w-4 text-gray-400" />
+              <SelectValue placeholder={loadingMembers ? "Loading GitHub members..." : "Select GitHub username"} />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None (Skip GitHub linking)</SelectItem>
+            {githubMembers.map((member) => (
+              <SelectItem key={member.id} value={member.githubUsername}>
+                <div className="flex items-center gap-2">
+                  <Github className="h-3 w-3" />
+                  <span className="font-mono text-sm">{member.githubUsername}</span>
+                  {member.githubName && (
+                    <span className="text-xs text-gray-500">({member.githubName})</span>
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-sm text-gray-500">
+          Link this employee to a GitHub organization member. Skills will be auto-detected from their commits.
+        </p>
+        {githubMembers.length === 0 && !loadingMembers && (
+          <p className="text-sm text-amber-600">
+            No unlinked GitHub members found. Run Auto-Discovery first from the Integrations page.
+          </p>
+        )}
       </div>
 
       {/* Preview */}

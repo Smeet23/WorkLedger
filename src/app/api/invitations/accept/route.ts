@@ -14,10 +14,13 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { token, password, createUser } = acceptInvitationSchema.parse(body)
 
-    // Get the invitation
+    // Get the invitation (NEW: include githubOrgMember for Phase 2)
     const invitation = await db.invitation.findUnique({
       where: { token },
-      include: { company: true }
+      include: {
+        company: true,
+        githubOrgMember: true  // NEW: Phase 2
+      }
     })
 
     if (!invitation) {
@@ -123,7 +126,32 @@ export async function POST(request: Request) {
             title: invitation.title,
             department: invitation.department,
             companyId: invitation.companyId,
-            isActive: true
+            isActive: true,
+            githubUsername: invitation.suggestedGithubUsername || null, // NEW: Phase 2
+            autoDiscovered: false // Will be set to true if linked via auto-discovery
+          }
+        })
+      }
+
+      // NEW: Phase 2 - Auto-link to GitHub Organization Member
+      if (invitation.githubOrgMember) {
+        // Link the GitHub org member to the employee
+        await tx.gitHubOrganizationMember.update({
+          where: { id: invitation.githubOrgMember.id },
+          data: {
+            employeeId: employee.id,
+            matchMethod: 'invitation',
+            matchConfidence: 1.0 // 100% confidence since manager explicitly linked them
+          }
+        })
+
+        // Update employee with GitHub info
+        await tx.employee.update({
+          where: { id: employee.id },
+          data: {
+            githubUsername: invitation.githubOrgMember.githubUsername,
+            githubId: invitation.githubOrgMember.githubUserId.toString(),
+            autoDiscovered: true
           }
         })
       }
