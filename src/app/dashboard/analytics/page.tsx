@@ -127,7 +127,7 @@ export default async function CompanyDashboard() {
         name: true,
         fullName: true,
         description: true,
-        language: true,
+        primaryLanguage: true,
         updatedAt: true,
         employeeRepositories: {
           take: 1,
