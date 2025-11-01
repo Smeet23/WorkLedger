@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { db } from "@/lib/db"
+import { getUserWithCompany } from "@/lib/session"
 import Link from "next/link"
 import {
   Users,
@@ -21,6 +22,9 @@ import {
 } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
+// Cache this page for 30 seconds
+export const revalidate = 30
+
 export default async function CompanyDashboard() {
   const session = await requireAuth()
 
@@ -29,37 +33,14 @@ export default async function CompanyDashboard() {
     redirect('/employee')
   }
 
-  // Get user data
-  const user = await db.user.findUnique({
-    where: { id: session.user.id }
-  })
+  // Get user with company in a single query
+  const userData = await getUserWithCompany(session.user.id)
 
-  if (!user) {
+  if (!userData?.company) {
     redirect('/auth/signin')
   }
 
-  // Get employee record with company
-  const userEmployee = await db.employee.findFirst({
-    where: { email: user.email },
-    include: { company: true }
-  })
-
-  if (!userEmployee?.company) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-red-600">Company Not Found</CardTitle>
-            <CardDescription>
-              Your company account is not properly configured. Please contact support.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
-
-  const company = userEmployee.company
+  const { company } = userData
 
   // Get company statistics (optimized queries)
   const [

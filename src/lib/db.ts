@@ -48,10 +48,11 @@ function normalizeDatabaseUrl(url: string | undefined): string | undefined {
       // This prevents "prepared statement already exists" errors in serverless environments
       urlObj.searchParams.set('pgbouncer', 'true')
       
-      // Set connection limit for serverless (1 connection per instance)
-      // This prevents connection pool exhaustion in serverless environments
+      // Set connection limit for serverless (higher limit for better performance)
+      // In production, allow 5 connections per serverless instance for parallel queries
       if (!urlObj.searchParams.has('connection_limit')) {
-        urlObj.searchParams.set('connection_limit', '1')
+        const limit = process.env.VERCEL ? '5' : '1'
+        urlObj.searchParams.set('connection_limit', limit)
       }
       
       // Add connection timeouts for serverless to prevent hanging connections

@@ -8,6 +8,9 @@ import { Users, UserPlus, Upload, Download, Filter, TrendingUp, Award } from "lu
 import Link from "next/link"
 import { EmployeeListClient } from "@/components/employees/employee-list-client"
 
+// Cache for 30 seconds with ISR
+export const revalidate = 30
+
 export default async function EmployeeManagement() {
   const session = await requireCompanyAdmin()
   const userInfo = await getUserWithCompany(session.user.id)
