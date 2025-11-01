@@ -22,9 +22,6 @@ import {
 } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
-// Cache this page for 30 seconds
-export const revalidate = 30
-
 export default async function CompanyDashboard() {
   const session = await requireAuth()
 

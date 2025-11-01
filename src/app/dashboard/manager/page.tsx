@@ -26,9 +26,6 @@ import {
 import { format, formatDistance, startOfDay, subDays } from 'date-fns'
 import { TeamTableClient } from "@/components/manager/team-table-client"
 
-// Cache for 30 seconds with ISR
-export const revalidate = 30
-
 // Get real-time team data
 async function getTeamAnalytics(companyId: string) {
   const now = new Date()

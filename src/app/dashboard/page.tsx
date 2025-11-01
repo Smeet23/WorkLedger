@@ -20,9 +20,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-// Cache for 30 seconds with ISR
-export const revalidate = 30
-
 export default async function CompanyDashboard() {
   const session = await requireCompanyAdmin()
   const userInfo = await getUserWithCompany(session.user.id)
