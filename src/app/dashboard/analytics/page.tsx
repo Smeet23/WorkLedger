@@ -61,7 +61,7 @@ export default async function CompanyDashboard() {
 
   const company = userEmployee.company
 
-  // Get company statistics
+  // Get company statistics (optimized queries)
   const [
     employeeCount,
     certificateCount,
@@ -73,7 +73,7 @@ export default async function CompanyDashboard() {
   ] = await Promise.all([
     db.employee.count({ where: { companyId: company.id } }),
     db.certificate.count({
-      where: { employee: { companyId: company.id } }
+      where: { companyId: company.id }
     }),
     db.skillRecord.count({
       where: { employee: { companyId: company.id } }
@@ -85,7 +85,13 @@ export default async function CompanyDashboard() {
       where: { companyId: company.id, isActive: true },
       take: 5,
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        createdAt: true,
         _count: {
           select: {
             skillRecords: true,
@@ -95,25 +101,48 @@ export default async function CompanyDashboard() {
       }
     }),
     db.certificate.findMany({
-      where: { employee: { companyId: company.id } },
+      where: { companyId: company.id },
       take: 5,
       orderBy: { issueDate: 'desc' },
-      include: {
-        employee: true
+      select: {
+        id: true,
+        title: true,
+        issueDate: true,
+        verificationId: true,
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
       }
     }),
     db.repository.findMany({
       where: { companyId: company.id },
       take: 10,
       orderBy: { updatedAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        fullName: true,
+        description: true,
+        language: true,
+        updatedAt: true,
         employeeRepositories: {
           take: 1,
           orderBy: {
             commitCount: 'desc'
           },
-          include: {
-            employee: true
+          select: {
+            commitCount: true,
+            employee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
           }
         },
         _count: {

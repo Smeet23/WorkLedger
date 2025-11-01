@@ -298,6 +298,8 @@ model Certificate {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
+  @@index([companyId])
+  @@index([companyId, issueDate])
   @@map("certificates")
 }
 
@@ -434,6 +436,7 @@ model Invitation {
 
   @@index([token])
   @@index([email, companyId])
+  @@index([companyId, status])
   @@map("invitations")
 }
 
@@ -510,6 +513,7 @@ model Repository {
   updatedAt       DateTime @updatedAt
 
   @@index([companyId])
+  @@index([companyId, updatedAt])
   @@map("repositories")
 }
 
@@ -542,6 +546,7 @@ model EmployeeRepository {
   @@unique([employeeId, repositoryId])
   @@index([employeeId])
   @@index([repositoryId])
+  @@index([repositoryId, commitCount])
   @@map("employee_repositories")
 }
 
