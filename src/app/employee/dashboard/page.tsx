@@ -10,7 +10,6 @@ import {
   GitBranch,
   Star,
   Award,
-  Github,
   AlertCircle,
   CheckCircle,
   GitCommitHorizontal,
@@ -64,7 +63,7 @@ export default async function EmployeePortal() {
   }
 
   // Fetch real data for the employee
-  const [skillRecords, certificates, employeeRepos, totalCommitCount, githubConnection] = await Promise.all([
+  const [skillRecords, certificates, employeeRepos, totalCommitCount] = await Promise.all([
     db.skillRecord.findMany({
       where: { employeeId: employee.id },
       include: { skill: true },
@@ -96,9 +95,6 @@ export default async function EmployeePortal() {
       where: {
         authorEmail: employee.email
       }
-    }),
-    db.gitHubConnection.findUnique({
-      where: { employeeId: employee.id }
     })
   ])
 
@@ -149,74 +145,6 @@ export default async function EmployeePortal() {
             </div>
           </div>
         </div>
-
-        {/* GitHub Connection Alert */}
-        {!githubConnection && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
-                  <Github className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Connect Your GitHub Account</h3>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Automatically track your contributions and generate verified certificates
-                  </p>
-                  <ul className="space-y-1 text-sm text-gray-600 mb-4">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-gray-400" />
-                      Automatic skill detection
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-gray-400" />
-                      Track contributions
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <Button asChild>
-                <Link href="/api/github/connect?returnUrl=/employee/dashboard">
-                  <Github className="w-4 h-4 mr-2" />
-                  Connect GitHub
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* GitHub Connected Status */}
-        {githubConnection && githubConnection.isActive && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-semibold text-gray-900">GitHub Connected</h3>
-                    <Badge variant="outline" className="text-green-700 border-green-700">Active</Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Connected as <span className="font-mono font-semibold text-gray-900">@{githubConnection.githubUsername}</span>
-                  </p>
-                  {githubConnection.lastSync && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Last synced: {formatDistance(new Date(githubConnection.lastSync), new Date(), { addSuffix: true })}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/employee/github">
-                  Manage
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -327,56 +255,6 @@ export default async function EmployeePortal() {
               </CardContent>
             </Card>
 
-            {/* GitHub Card */}
-            {githubConnection ? (
-              <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
-                <CardHeader>
-                  <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center mb-3">
-                    <Github className="w-5 h-5 text-white" />
-                  </div>
-                  <CardTitle className="text-base">GitHub Connected</CardTitle>
-                  <CardDescription>Syncing {repositoryCount} repositories</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 mb-4 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total Commits:</span>
-                      <span className="font-semibold text-gray-900">{totalCommitCount}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Skills Detected:</span>
-                      <span className="font-semibold text-gray-900">{skillCount}</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/employee/github">
-                      Manage GitHub
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
-                <CardHeader>
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-3">
-                    <AlertCircle className="w-5 h-5 text-gray-700" />
-                  </div>
-                  <CardTitle className="text-base">Connect GitHub</CardTitle>
-                  <CardDescription>Start tracking your contributions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild className="w-full">
-                    <Link href="/api/github/connect?returnUrl=/employee/dashboard">
-                      <Github className="w-4 h-4 mr-2" />
-                      Connect Now
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Repositories */}
             <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
               <CardHeader>
@@ -429,7 +307,7 @@ export default async function EmployeePortal() {
                 <div>
                   <CardTitle className="text-base">Your Skills</CardTitle>
                   <CardDescription className="text-sm">
-                    {skillCount > 0 ? `${skillCount} skills from GitHub activity` : 'No skills tracked yet'}
+                    {skillCount > 0 ? `${skillCount} skills tracked` : 'No skills tracked yet'}
                   </CardDescription>
                 </div>
               </div>
@@ -480,13 +358,7 @@ export default async function EmployeePortal() {
                     <Code className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="font-medium text-gray-900 mb-1">No skills tracked yet</h3>
-                  <p className="text-sm text-gray-600 mb-4">Connect your GitHub to start tracking</p>
-                  <Button asChild size="sm">
-                    <Link href="/api/github/connect?returnUrl=/employee/dashboard">
-                      <Github className="w-4 h-4 mr-2" />
-                      Connect GitHub
-                    </Link>
-                  </Button>
+                  <p className="text-sm text-gray-600">Your manager will sync skills from your work</p>
                 </div>
               )}
             </CardContent>
@@ -559,13 +431,7 @@ export default async function EmployeePortal() {
                     <GitBranch className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="font-medium text-gray-900 mb-1">No repositories yet</h3>
-                  <p className="text-sm text-gray-600 mb-4">Connect GitHub and sync your repos</p>
-                  <Button asChild size="sm">
-                    <Link href="/api/github/connect?returnUrl=/employee/dashboard">
-                      <Github className="w-4 h-4 mr-2" />
-                      Connect GitHub
-                    </Link>
-                  </Button>
+                  <p className="text-sm text-gray-600">Your manager will sync repositories from your organization</p>
                 </div>
               )}
             </CardContent>

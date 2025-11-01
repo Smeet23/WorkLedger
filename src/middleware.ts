@@ -64,6 +64,13 @@ export async function middleware(req: NextRequest) {
     )
   }
 
+  // Manager-only routes: redirect non-admin users
+  if (isAuth && pathname.startsWith('/dashboard/integrations')) {
+    if (token.role !== 'company_admin') {
+      return NextResponse.redirect(new URL('/employee/dashboard', req.url))
+    }
+  }
+
   return NextResponse.next()
 }
 
