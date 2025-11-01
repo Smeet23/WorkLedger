@@ -15,6 +15,7 @@ import { Github, CheckCircle, AlertCircle, Users, GitBranch, Code, Loader2 } fro
 export default function GitHubIntegrationPage() {
   const [loading, setLoading] = useState(true)
   const [installation, setInstallation] = useState<any>(null)
+  const [syncing, setSyncing] = useState(false)
   const [stats, setStats] = useState({
     totalEmployees: 0,
     discoveredEmployees: 0,
@@ -24,13 +25,18 @@ export default function GitHubIntegrationPage() {
   })
 
   useEffect(() => {
-    fetchInstallationStatus()
-
     // Check if user just completed installation
     const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('installed') === 'true') {
+    const justInstalled = urlParams.get('installed') === 'true'
+
+    if (justInstalled) {
+      // Show syncing state and retry fetching status
+      setSyncing(true)
+      fetchInstallationStatusWithRetry()
       // Clear the URL parameter
       window.history.replaceState({}, '', '/dashboard/integrations/github')
+    } else {
+      fetchInstallationStatus()
     }
   }, [])
 
@@ -47,6 +53,41 @@ export default function GitHubIntegrationPage() {
       console.error('Failed to fetch installation status:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchInstallationStatusWithRetry = async (retries = 5, delay = 1000) => {
+    try {
+      const response = await fetch('/api/github/installation/status')
+      const data = await response.json()
+
+      if (data.success && data.data.installation) {
+        // Installation found!
+        setInstallation(data.data.installation)
+        setStats(data.data.stats || stats)
+        setSyncing(false)
+        setLoading(false)
+      } else if (retries > 0) {
+        // Retry after delay
+        setTimeout(() => {
+          fetchInstallationStatusWithRetry(retries - 1, delay * 1.5)
+        }, delay)
+      } else {
+        // Max retries reached, still not found
+        console.error('Installation not found after retries')
+        setSyncing(false)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Failed to fetch installation status:', error)
+      if (retries > 0) {
+        setTimeout(() => {
+          fetchInstallationStatusWithRetry(retries - 1, delay * 1.5)
+        }, delay)
+      } else {
+        setSyncing(false)
+        setLoading(false)
+      }
     }
   }
 
@@ -84,7 +125,14 @@ export default function GitHubIntegrationPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full blur-xl opacity-50 animate-pulse" />
             <Loader2 className="relative h-12 w-12 animate-spin text-blue-600" />
           </div>
-          <p className="text-sm font-semibold text-slate-600">Loading integration...</p>
+          <p className="text-sm font-semibold text-slate-600">
+            {syncing ? 'Syncing GitHub installation...' : 'Loading integration...'}
+          </p>
+          {syncing && (
+            <p className="text-xs text-slate-500 max-w-md text-center">
+              We're fetching your GitHub organization data. This may take a few moments.
+            </p>
+          )}
         </div>
       </div>
     )
