@@ -176,6 +176,7 @@ model Employee {
   updatedAt       DateTime      @updatedAt
 
   @@unique([companyId, email])
+  @@index([companyId, isActive])
   @@map("employees")
 }
 
@@ -220,6 +221,8 @@ model SkillRecord {
   updatedAt   DateTime   @updatedAt
 
   @@unique([employeeId, skillId])
+  @@index([employeeId])
+  @@index([skillId])
   @@map("skill_records")
 }
 

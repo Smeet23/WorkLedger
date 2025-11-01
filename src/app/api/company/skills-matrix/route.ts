@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession()
     if (!session?.user) {
@@ -37,16 +37,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
 
-    // Get all employees with their skills for this company
+    // Get all employees with their skills for this company (optimized)
     const employees = await db.employee.findMany({
       where: {
         companyId: userEmployee.company.id,
         isActive: true
       },
-      include: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        title: true,
+        role: true,
+        department: true,
         skillRecords: {
-          include: {
-            skill: true
+          select: {
+            level: true,
+            confidence: true,
+            lastUsed: true,
+            skill: {
+              select: {
+                id: true,
+                name: true,
+                category: true
+              }
+            }
           },
           orderBy: {
             confidence: 'desc'
