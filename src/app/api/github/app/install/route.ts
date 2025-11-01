@@ -146,10 +146,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Generate installation URL
   const state = `company_${adminEmployee.company.id}_${Date.now()}`
-  const installationUrl = `https://github.com/apps/${config.github.app.id}/installations/new`
+  const appName = config.github.app.appName || 'workledger'
+  const installationUrl = `https://github.com/apps/${appName}/installations/new`
 
   companyLogger.info('Generating GitHub App installation URL', {
     adminId: session.user.id,
+    appName,
     state
   })
 
