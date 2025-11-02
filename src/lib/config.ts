@@ -32,7 +32,11 @@ const envSchema = z.object({
   GITLAB_CLIENT_SECRET: z.string().optional(),
   GITLAB_REDIRECT_URI: z.string().optional(),
 
-  // Email (optional)
+  // Email (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
+
+  // Legacy SMTP (deprecated, kept for backwards compatibility)
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),
   SMTP_USER: z.string().optional(),
@@ -321,7 +325,7 @@ export const securityConfig = {
 
 // Email Configuration
 export const emailConfig = {
-  from: env.EMAIL_FROM || `${env.APP_NAME} <noreply@${new URL(env.APP_URL).hostname}>`,
+  from: env.RESEND_FROM_EMAIL || env.EMAIL_FROM || `${env.APP_NAME} <noreply@${new URL(env.APP_URL).hostname}>`,
 
   templates: {
     invitation: {
@@ -369,7 +373,7 @@ export const featureFlags = {
   publicProfiles: true,
   skillEvolution: true,
   auditLogging: true,
-  emailNotifications: !!env.SMTP_HOST,
+  emailNotifications: !!(env.RESEND_API_KEY || env.SMTP_HOST), // Support both Resend and SMTP
   bulkImport: true,
   webhooks: false, // Not implemented yet
   mobileApp: false, // Future feature
