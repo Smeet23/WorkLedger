@@ -28,10 +28,10 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
     email: '',
     firstName: '',
     lastName: '',
-    role: '',
+    role: 'DEVELOPER',
     title: '',
     department: '',
-    githubUsername: '', // NEW: Phase 2
+    githubUsername: 'none', // NEW: Phase 2 - use 'none' instead of empty string
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -65,15 +65,19 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
     setSuccess("")
 
     try {
+      // Prepare data - convert 'none' to undefined for optional fields
+      const submitData = {
+        ...formData,
+        githubUsername: formData.githubUsername === 'none' ? undefined : formData.githubUsername,
+        sendEmail: true,
+      }
+
       const response = await fetch('/api/company/invitations/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          sendEmail: true,
-        }),
+        body: JSON.stringify(submitData),
       })
 
       const result = await response.json()
@@ -89,10 +93,10 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
         email: '',
         firstName: '',
         lastName: '',
-        role: '',
+        role: 'DEVELOPER',
         title: '',
         department: '',
-        githubUsername: '', // NEW: Phase 2
+        githubUsername: 'none', // NEW: Phase 2
       })
 
       // Redirect after a short delay
@@ -172,7 +176,7 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="role">Role *</Label>
-          <Select onValueChange={(value) => handleInputChange('role', value)} required>
+          <Select onValueChange={(value) => handleInputChange('role', value)} value={formData.role} required>
             <SelectTrigger>
               <SelectValue placeholder="Select employee role" />
             </SelectTrigger>
@@ -229,7 +233,7 @@ export function InviteEmployeeForm({ companyDomain }: Omit<InviteEmployeeFormPro
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None (Skip GitHub linking)</SelectItem>
+            <SelectItem value="none">None (Skip GitHub linking)</SelectItem>
             {githubMembers.map((member) => (
               <SelectItem key={member.id} value={member.githubUsername}>
                 <div className="flex items-center gap-2">
