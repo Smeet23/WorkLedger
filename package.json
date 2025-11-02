@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
+    "email:dev": "email dev --dir src/emails",
     "db:push": "dotenv -e .env -- prisma db push",
     "db:migrate": "dotenv -e .env -- prisma migrate dev",
     "db:studio": "dotenv -e .env -- prisma studio",
@@ -68,6 +69,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@react-email/preview-server": "^4.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.10.5",
@@ -82,6 +84,7 @@
     "eslint-config-next": "14.0.4",
     "postcss": "^8.4.32",
     "prisma": "^5.7.0",
+    "react-email": "^4.3.2",
     "tailwindcss": "^3.4.0",
     "tsx": "^4.20.5",
     "typescript": "^5.3.3"

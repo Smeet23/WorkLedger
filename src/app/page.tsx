@@ -89,7 +89,7 @@ export default function HomePage() {
 
             {/* Subheadline */}
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Learn from your team's code activity, take control of skill development and start generating verified certificates.
+              Track your team's work activity, monitor performance, and gain insights into employee productivity and skills.
             </p>
 
             {/* CTA Button */}

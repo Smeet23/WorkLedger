@@ -27,14 +27,14 @@ interface InvitationEmailParams {
 /**
  * Render invitation email template to HTML
  * @param params - Invitation email parameters
- * @returns HTML string
+ * @returns Promise with HTML string
  */
-export function renderInvitationEmail(params: InvitationEmailParams): string {
-  return render(InvitationEmail(params))
+export async function renderInvitationEmail(params: InvitationEmailParams): Promise<string> {
+  return await render(InvitationEmail(params))
 }
 
 // Add more email template renderers here as needed
 // Example:
-// export function renderWelcomeEmail(params: WelcomeEmailParams): string {
-//   return render(WelcomeEmail(params))
+// export async function renderWelcomeEmail(params: WelcomeEmailParams): Promise<string> {
+//   return await render(WelcomeEmail(params))
 // }

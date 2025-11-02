@@ -270,7 +270,7 @@ export default async function CertificateVerificationPage({ params }: PageProps)
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            This certificate was issued through WorkLedger's secure certification platform.
+            This certificate was issued through WorkLedger's secure platform.
           </p>
           <Link href="/" className="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block">
             Learn more about WorkLedger →

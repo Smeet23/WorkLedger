@@ -7,8 +7,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'WorkLedger - Corporate Skill Certification Platform',
-  description: 'Enterprise platform for tracking employee skill development and generating verified digital certificates',
+  title: 'WorkLedger - Employee Management Platform',
+  description: 'Enterprise platform for tracking employee performance, skills, and work activities',
 }
 
 export default function RootLayout({

@@ -36,7 +36,7 @@ export const InvitationEmail = ({
   expiryDays = 7,
   appName = 'WorkLedger',
 }: InvitationEmailProps) => {
-  const previewText = `Join ${companyName} on ${appName}`
+  const previewText = `${inviterName} invited you to join ${companyName}`
 
   return (
     <Html>
@@ -44,82 +44,80 @@ export const InvitationEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Header */}
+          {/* Simple Header */}
           <Section style={header}>
-            <Heading style={headerTitle}>{appName}</Heading>
-            <Text style={headerSubtitle}>
-              Professional Skill Certification Platform
-            </Text>
+            <Text style={logo}>{appName}</Text>
           </Section>
 
           {/* Content */}
           <Section style={content}>
-            <Heading style={h2}>Welcome to {companyName}!</Heading>
+            <Heading style={h1}>You've been invited to {companyName}</Heading>
 
             <Text style={paragraph}>Hi {firstName},</Text>
 
             <Text style={paragraph}>
-              <strong>{inviterName}</strong> has invited you to join{' '}
+              {inviterName} ({inviterEmail}) has invited you to join{' '}
               <strong>{companyName}</strong> on {appName}.
             </Text>
 
-            <Text style={paragraph}>
-              {appName} helps track and certify your professional skills
-              through automated analysis of your work, helping you build a
-              verified portfolio of your achievements.
-            </Text>
-
-            {/* Details Box */}
+            {/* Details Table */}
             <Section style={detailsBox}>
-              <Heading style={detailsHeading}>Your Invitation Details:</Heading>
-              <ul style={detailsList}>
-                <li>
-                  <strong>Company:</strong> {companyName}
-                </li>
-                <li>
-                  <strong>Role:</strong> {role}
-                </li>
-                {title && (
-                  <li>
-                    <strong>Title:</strong> {title}
-                  </li>
-                )}
-                {department && (
-                  <li>
-                    <strong>Department:</strong> {department}
-                  </li>
-                )}
-              </ul>
+              <table style={detailsTable}>
+                <tbody>
+                  <tr>
+                    <td style={labelCell}>Company</td>
+                    <td style={valueCell}>{companyName}</td>
+                  </tr>
+                  <tr>
+                    <td style={labelCell}>Role</td>
+                    <td style={valueCell}>{role}</td>
+                  </tr>
+                  {title && (
+                    <tr>
+                      <td style={labelCell}>Title</td>
+                      <td style={valueCell}>{title}</td>
+                    </tr>
+                  )}
+                  {department && (
+                    <tr>
+                      <td style={labelCell}>Department</td>
+                      <td style={valueCell}>{department}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </Section>
 
             {/* CTA Button */}
             <Section style={buttonContainer}>
               <Button style={button} href={inviteUrl}>
-                Accept Invitation
+                Accept invitation
               </Button>
             </Section>
 
-            {/* Warning Box */}
-            <Section style={warningBox}>
-              <Text style={warningText}>
-                <strong>⏰ Important:</strong> This invitation will expire in{' '}
-                {expiryDays} days.
-              </Text>
-            </Section>
-
-            <Text style={paragraph}>
-              If you have any questions, please contact{' '}
-              <a href={`mailto:${inviterEmail}`} style={link}>
-                {inviterEmail}
-              </a>
-              .
+            <Text style={expiryText}>
+              This invitation expires in {expiryDays} days.
             </Text>
 
             <Hr style={hr} />
 
             <Text style={footer}>
-              This email was sent by {appName}. If you didn't expect this
-              invitation, you can safely ignore this email.
+              If you have questions, contact{' '}
+              <a href={`mailto:${inviterEmail}`} style={link}>
+                {inviterEmail}
+              </a>
+            </Text>
+
+            <Text style={footer}>
+              This invitation was intended for {firstName}. If you didn't expect
+              this, you can ignore this email.
+            </Text>
+          </Section>
+
+          {/* Footer */}
+          <Section style={footerSection}>
+            <Text style={footerText}>
+              {appName} • Employee Management Platform
             </Text>
           </Section>
         </Container>
@@ -130,128 +128,135 @@ export const InvitationEmail = ({
 
 export default InvitationEmail
 
-// Styles
+// Styles - Clean, industry-standard design
 const main = {
-  backgroundColor: '#f6f9fc',
+  backgroundColor: '#f6f6f6',
   fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+    '-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif',
 }
 
 const container = {
   backgroundColor: '#ffffff',
-  margin: '0 auto',
-  padding: '20px 0 48px',
+  margin: '40px auto',
   marginBottom: '64px',
   maxWidth: '600px',
+  borderRadius: '8px',
+  overflow: 'hidden' as const,
+  border: '1px solid #e5e5e5',
 }
 
 const header = {
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  padding: '30px',
-  borderRadius: '10px 10px 0 0',
-  textAlign: 'center' as const,
+  padding: '32px 40px',
+  borderBottom: '1px solid #e5e5e5',
 }
 
-const headerTitle = {
-  color: '#ffffff',
-  fontSize: '28px',
-  fontWeight: 'bold',
+const logo = {
+  fontSize: '20px',
+  fontWeight: '600',
+  color: '#000000',
   margin: '0',
-  padding: '0',
-}
-
-const headerSubtitle = {
-  color: '#ffffff',
-  fontSize: '16px',
-  opacity: 0.9,
-  margin: '10px 0 0 0',
-  padding: '0',
+  letterSpacing: '-0.5px',
 }
 
 const content = {
-  padding: '30px',
+  padding: '40px',
 }
 
-const h2 = {
-  color: '#667eea',
+const h1 = {
+  color: '#000000',
   fontSize: '24px',
-  fontWeight: 'bold',
-  margin: '0 0 15px',
+  fontWeight: '600',
+  lineHeight: '1.3',
+  margin: '0 0 24px',
+  letterSpacing: '-0.5px',
 }
 
 const paragraph = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '26px',
-  margin: '0 0 15px',
+  color: '#525252',
+  fontSize: '15px',
+  lineHeight: '24px',
+  margin: '0 0 16px',
 }
 
 const detailsBox = {
-  backgroundColor: '#f8fafc',
-  padding: '20px',
-  borderRadius: '8px',
-  margin: '20px 0',
+  margin: '32px 0',
 }
 
-const detailsHeading = {
-  color: '#374151',
-  fontSize: '18px',
-  fontWeight: 'bold',
-  margin: '0 0 10px',
+const detailsTable = {
+  width: '100%',
+  borderCollapse: 'collapse' as const,
+  border: '1px solid #e5e5e5',
+  borderRadius: '6px',
 }
 
-const detailsList = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '26px',
-  margin: '0',
-  paddingLeft: '20px',
+const labelCell = {
+  padding: '12px 16px',
+  fontSize: '14px',
+  color: '#737373',
+  borderBottom: '1px solid #f5f5f5',
+  width: '140px',
+  fontWeight: '500',
+}
+
+const valueCell = {
+  padding: '12px 16px',
+  fontSize: '14px',
+  color: '#171717',
+  borderBottom: '1px solid #f5f5f5',
+  fontWeight: '500',
 }
 
 const buttonContainer = {
-  textAlign: 'center' as const,
-  margin: '30px 0',
+  margin: '32px 0',
 }
 
 const button = {
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  backgroundColor: '#000000',
   color: '#ffffff',
-  padding: '15px 30px',
+  padding: '12px 28px',
   textDecoration: 'none',
-  borderRadius: '8px',
+  borderRadius: '6px',
   display: 'inline-block',
-  fontWeight: 'bold',
-  fontSize: '16px',
+  fontWeight: '500',
+  fontSize: '15px',
+  lineHeight: '1.5',
 }
 
-const warningBox = {
-  backgroundColor: '#fef3c7',
-  border: '1px solid #f59e0b',
-  padding: '15px',
-  borderRadius: '8px',
-  margin: '20px 0',
-}
-
-const warningText = {
-  color: '#92400e',
+const expiryText = {
+  color: '#737373',
   fontSize: '14px',
-  margin: '0',
+  lineHeight: '20px',
+  margin: '0 0 24px',
 }
 
 const link = {
-  color: '#667eea',
+  color: '#000000',
   textDecoration: 'underline',
 }
 
 const hr = {
   border: 'none',
-  borderTop: '1px solid #e5e7eb',
-  margin: '30px 0',
+  borderTop: '1px solid #e5e5e5',
+  margin: '32px 0',
 }
 
 const footer = {
-  color: '#6b7280',
+  color: '#737373',
   fontSize: '14px',
-  textAlign: 'center' as const,
+  lineHeight: '20px',
+  margin: '0 0 12px',
+}
+
+const footerSection = {
+  padding: '24px 40px',
+  borderTop: '1px solid #e5e5e5',
+  backgroundColor: '#fafafa',
+}
+
+const footerText = {
+  color: '#a3a3a3',
+  fontSize: '12px',
+  lineHeight: '16px',
   margin: '0',
+  textAlign: 'center' as const,
 }

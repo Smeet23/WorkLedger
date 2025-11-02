@@ -52,7 +52,7 @@ export default function SignUpPage({
             <p className="text-base text-slate-600 font-medium">
               {userType === 'company'
                 ? 'Create your account in minutes'
-                : 'Build your verified portfolio'}
+                : 'Join your team workspace'}
             </p>
           </div>
 
