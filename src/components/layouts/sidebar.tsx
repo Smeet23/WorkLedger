@@ -18,6 +18,7 @@ import {
   Code,
   TrendingUp,
   ChevronLeft,
+  FolderKanban,
   type LucideIcon
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -47,6 +48,11 @@ const companyNavItems: NavItem[] = [
     title: "Team Members",
     href: "/dashboard/employees",
     icon: Users,
+  },
+  {
+    title: "Projects",
+    href: "/dashboard/projects",
+    icon: FolderKanban,
   },
   {
     title: "Analytics",

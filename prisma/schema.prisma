@@ -49,6 +49,14 @@ enum IntegrationType {
   OTHER
 }
 
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
 // Core Company Model
 model Company {
   id          String           @id @default(cuid())
@@ -86,6 +94,7 @@ model Company {
   jiraIntegrations JiraIntegration[]
   jiraProjects JiraProject[]
   jiraWebhooks JiraWebhook[]
+  projects    Project[]
 
   // Metadata
   createdAt   DateTime         @default(now())
@@ -170,6 +179,7 @@ model Employee {
   jiraUsers JiraUser[]
   jiraIssues JiraIssue[]
   jiraWorklogs JiraWorklog[]
+  projectMembers ProjectMember[]
 
   // Metadata
   createdAt       DateTime      @default(now())
@@ -190,6 +200,7 @@ model Skill {
   // Relationships
   skillRecords SkillRecord[]
   skillEvolutions SkillEvolution[]
+  projectTechStacks ProjectTechStack[]
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -1486,4 +1497,97 @@ model JiraWebhook {
   @@index([companyId, eventType, receivedAt])
   @@index([jiraEventId])
   @@map("jira_webhooks")
+}
+
+// ============================================
+// PROJECT MANAGEMENT
+// ============================================
+
+// Project Model
+model Project {
+  id              String        @id @default(cuid())
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Project Details
+  name            String
+  description     String?       @db.Text
+  status          ProjectStatus @default(PLANNING)
+
+  // Timeline
+  startDate       DateTime?
+  endDate         DateTime?
+  deadline        DateTime?
+
+  // Budget & Priority
+  budget          Float?
+  priority        String?       // HIGH, MEDIUM, LOW
+
+  // Created by
+  createdById     String?       // User ID who created the project
+
+  // Relationships
+  techStack       ProjectTechStack[]
+  members         ProjectMember[]
+
+  // Metadata
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@map("projects")
+}
+
+// Project Tech Stack (Junction table for Project <-> Skill)
+model ProjectTechStack {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skillId         String
+  skill           Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  // Optional: Mark if this skill is required or nice-to-have
+  isRequired      Boolean   @default(true)
+  priority        Int       @default(1)  // 1 = highest priority
+
+  createdAt       DateTime  @default(now())
+
+  @@unique([projectId, skillId])
+  @@index([projectId])
+  @@index([skillId])
+  @@map("project_tech_stacks")
+}
+
+// Project Member (Junction table for Project <-> Employee)
+model ProjectMember {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // Member Role in Project
+  role            String?   // Lead, Developer, Designer, etc.
+  isLead          Boolean   @default(false)
+
+  // Assignment Details
+  assignedAt      DateTime  @default(now())
+  removedAt       DateTime?
+
+  // Recommendation Data (if assigned via recommendation)
+  matchScore      Float?    // 0.0 - 1.0 match score when recommended
+  wasRecommended  Boolean   @default(false)
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([projectId, employeeId])
+  @@index([projectId])
+  @@index([employeeId])
+  @@index([projectId, isActive])
+  @@map("project_members")
 }

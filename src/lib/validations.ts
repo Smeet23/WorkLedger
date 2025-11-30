@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { EmployeeRole, SkillLevel, CertificateStatus } from '@prisma/client'
+import { EmployeeRole, SkillLevel, CertificateStatus, ProjectStatus } from '@prisma/client'
 
 // Common validation patterns
 const emailSchema = z
@@ -203,6 +203,63 @@ export const certificateSchema = z.object({
   path: ['periodEnd'],
 })
 
+// Project schemas
+export const createProjectSchema = z.object({
+  name: z.string().min(1, 'Project name is required').max(200, 'Project name must not exceed 200 characters').trim(),
+  description: z.string().max(2000, 'Description must not exceed 2000 characters').optional(),
+  status: z.nativeEnum(ProjectStatus).default('PLANNING'),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  deadline: z.coerce.date().optional(),
+  budget: z.coerce.number().positive('Budget must be a positive number').optional(),
+  priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+  techStackIds: z.array(z.string()).min(1, 'At least one technology is required'),
+}).refine(data => {
+  if (data.startDate && data.endDate) {
+    return data.endDate >= data.startDate
+  }
+  return true
+}, {
+  message: 'End date must be on or after start date',
+  path: ['endDate'],
+})
+
+export const updateProjectSchema = z.object({
+  name: z.string().min(1, 'Project name is required').max(200, 'Project name must not exceed 200 characters').trim().optional(),
+  description: z.string().max(2000, 'Description must not exceed 2000 characters').optional().nullable(),
+  status: z.nativeEnum(ProjectStatus).optional(),
+  startDate: z.coerce.date().optional().nullable(),
+  endDate: z.coerce.date().optional().nullable(),
+  deadline: z.coerce.date().optional().nullable(),
+  budget: z.coerce.number().positive('Budget must be a positive number').optional().nullable(),
+  priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional().nullable(),
+  techStackIds: z.array(z.string()).min(1, 'At least one technology is required').optional(),
+})
+
+export const projectTechStackSchema = z.object({
+  skillId: z.string().min(1, 'Skill ID is required'),
+  isRequired: z.boolean().default(true),
+  priority: z.number().int().min(1).max(10).default(1),
+})
+
+export const addProjectMemberSchema = z.object({
+  employeeId: z.string().min(1, 'Employee ID is required'),
+  role: z.string().max(100, 'Role must not exceed 100 characters').optional(),
+  isLead: z.boolean().default(false),
+})
+
+export const updateProjectMemberSchema = z.object({
+  role: z.string().max(100, 'Role must not exceed 100 characters').optional().nullable(),
+  isLead: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+})
+
+export const teamRecommendationSchema = z.object({
+  projectId: z.string().min(1, 'Project ID is required'),
+  teamSize: z.number().int().min(1, 'Team size must be at least 1').max(50, 'Team size must not exceed 50').default(5),
+  includePartialMatches: z.boolean().default(true),
+})
+
 // GitHub integration schemas
 export const githubOAuthSchema = z.object({
   code: z.string().min(1, 'Authorization code is required'),
@@ -341,6 +398,12 @@ export type DateRangeData = z.infer<typeof dateRangeSchema>
 export type WebhookData = z.infer<typeof webhookSchema>
 export type PaginationData = z.infer<typeof paginationSchema>
 export type SearchData = z.infer<typeof searchSchema>
+export type CreateProjectData = z.infer<typeof createProjectSchema>
+export type UpdateProjectData = z.infer<typeof updateProjectSchema>
+export type ProjectTechStackData = z.infer<typeof projectTechStackSchema>
+export type AddProjectMemberData = z.infer<typeof addProjectMemberSchema>
+export type UpdateProjectMemberData = z.infer<typeof updateProjectMemberSchema>
+export type TeamRecommendationData = z.infer<typeof teamRecommendationSchema>
 
 // Validation helper functions
 export function validateEmail(email: string): boolean {
@@ -417,6 +480,13 @@ export const errorMessages = {
   certificate: {
     titleRequired: 'Certificate title is required',
     invalidDateRange: 'End date must be after start date',
+  },
+  project: {
+    nameRequired: 'Project name is required',
+    techStackRequired: 'At least one technology is required for the project',
+    invalidDateRange: 'End date must be on or after start date',
+    notFound: 'Project not found',
+    memberAlreadyExists: 'Employee is already a member of this project',
   },
   file: {
     tooLarge: (maxSize: number) => `File size must not exceed ${maxSize} MB`,
