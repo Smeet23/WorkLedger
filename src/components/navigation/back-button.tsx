@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,7 @@ interface BackButtonProps {
   className?: string
 }
 
-export function BackButton({ fallbackUrl = "/", className }: BackButtonProps) {
+function BackButtonInner({ fallbackUrl = "/", className }: BackButtonProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -39,5 +40,18 @@ export function BackButton({ fallbackUrl = "/", className }: BackButtonProps) {
       <ArrowLeft className="h-4 w-4 mr-2" />
       {buttonText}
     </Button>
+  )
+}
+
+export function BackButton(props: BackButtonProps) {
+  return (
+    <Suspense fallback={
+      <Button variant="ghost" className={props.className}>
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Go Back
+      </Button>
+    }>
+      <BackButtonInner {...props} />
+    </Suspense>
   )
 }

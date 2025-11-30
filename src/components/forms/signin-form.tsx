@@ -37,7 +37,13 @@ export function SignInForm({ userType }: SignInFormProps) {
       })
 
       if (result?.error) {
-        setError("Invalid credentials. Please check your email and password.")
+        if (result.error.includes("WRONG_ACCOUNT_TYPE_USE_EMPLOYEE")) {
+          setError("This account is registered as an employee. Please use the employee login.")
+        } else if (result.error.includes("WRONG_ACCOUNT_TYPE_USE_ADMIN")) {
+          setError("This account is registered as a company admin. Please use the company admin login.")
+        } else {
+          setError("Invalid credentials. Please check your email and password.")
+        }
       } else if (result?.ok) {
         const redirectUrl = userType === "company" ? "/dashboard" : "/employee/dashboard"
         window.location.href = redirectUrl

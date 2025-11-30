@@ -62,6 +62,18 @@ export const authConfig = {
           return null
         }
 
+        // Validate that the userType matches the user's actual role
+        const userType = credentials.userType as string
+        const isCompanyAdmin = user.role === "company_admin"
+
+        if (userType === "company" && !isCompanyAdmin) {
+          throw new Error("WRONG_ACCOUNT_TYPE_USE_EMPLOYEE")
+        }
+
+        if (userType === "employee" && isCompanyAdmin) {
+          throw new Error("WRONG_ACCOUNT_TYPE_USE_ADMIN")
+        }
+
         // Pass rememberMe preference along with user data
         const rememberMe = credentials.rememberMe === "true"
 

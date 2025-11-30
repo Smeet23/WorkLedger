@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { requireCompanyAdmin } from '@/lib/session'
+import { requireCompanyAdmin, getUserWithCompany } from '@/lib/session'
 import { db } from '@/lib/db'
 import { SkillsMatrixClient } from './skills-matrix-client'
 
@@ -264,12 +264,14 @@ function SkillsMatrixLoading() {
 
 // Server Component - fetches data and passes to client
 export default async function CompanySkillsMatrixPage() {
-  const { company } = await requireCompanyAdmin()
+  const session = await requireCompanyAdmin()
+  const userInfo = await getUserWithCompany(session.user.id)
 
-  if (!company) {
+  if (!userInfo?.company) {
     redirect('/auth/signin')
   }
 
+  const { company } = userInfo
   const data = await getSkillsMatrixData(company.id)
 
   if (!data) {
