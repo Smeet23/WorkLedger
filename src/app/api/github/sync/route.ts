@@ -1,34 +1,16 @@
-import { NextRequest } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
-import { createApiResponse, withErrorHandling } from '@/lib/api-response'
-import { AuthenticationError, NotFoundError } from '@/lib/errors'
-import { loggers, eventLoggers } from '@/lib/logger'
+import { withAuth } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
+import { NotFoundError } from '@/lib/errors'
+import { loggers } from '@/lib/logger'
 import { enhancedGitHubService } from '@/services/github/enhanced-client'
 import { GitHubAutoDiscoveryService } from '@/services/github/auto-discovery'
 
 const logger = loggers.apiRequest('POST', '/api/github/sync')
 const discoveryService = new GitHubAutoDiscoveryService()
+const apiResponse = createApiResponse()
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const apiResponse = createApiResponse()
-
-  // Check authentication
-  const session = await getServerSession()
-  if (!session?.user) {
-    throw new AuthenticationError('Authentication required')
-  }
-
-  // Get employee record
-  const employee = await db.employee.findFirst({
-    where: { email: session.user.email },
-    include: { company: true }
-  })
-
-  if (!employee) {
-    throw new NotFoundError('Employee', session.user.email)
-  }
-
+export const POST = withAuth(async (request, { user, employee, companyId }) => {
   const employeeLogger = logger.withEmployee(employee.id)
 
   employeeLogger.info('Starting GitHub sync', {
@@ -39,9 +21,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   try {
     let syncResult: any
 
-    if (session.user.role === 'company_admin') {
+    if (user.role === 'company_admin') {
       // Company admin can sync entire organization
-      syncResult = await syncOrganizationData(employee.companyId, employeeLogger)
+      syncResult = await syncOrganizationData(companyId, employeeLogger)
     } else {
       // Regular employee syncs their individual contributions
       syncResult = await syncEmployeeContributions(employee.id, employeeLogger)
@@ -56,10 +38,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     console.error('GitHub sync error:', error)
 
     // Return user-friendly error message
-    return apiResponse.error(
-      error?.message || 'Failed to sync GitHub repositories',
-      error?.statusCode || 500
-    )
+    return apiResponse.internalError(error?.message || 'Failed to sync GitHub repositories')
   }
 })
 

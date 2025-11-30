@@ -5,19 +5,31 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Github, CheckCircle, AlertCircle, RefreshCw, Settings } from 'lucide-react'
 
+interface GitHubPermissions {
+  contents?: string
+  metadata?: string
+  pull_requests?: string
+  issues?: string
+  members?: string
+  organization_administration?: string
+  [key: string]: string | undefined
+}
+
+interface GitHubInstallation {
+  id: string
+  installationId: string
+  accountLogin: string
+  accountType: string
+  repositorySelection: string
+  isActive: boolean
+  installedAt: string
+  updatedAt: string
+  permissions: GitHubPermissions
+  events: string[]
+}
+
 interface GitHubInstallationStatusProps {
-  installation: {
-    id: string
-    installationId: string
-    accountLogin: string
-    accountType: string
-    repositorySelection: string
-    isActive: boolean
-    installedAt: string
-    updatedAt: string
-    permissions: any
-    events: string[]
-  } | null
+  installation: GitHubInstallation | null
   onRefresh: () => void
 }
 
@@ -45,7 +57,7 @@ export function GitHubInstallationStatus({ installation, onRefresh }: GitHubInst
           <Github className="h-5 w-5" />
           GitHub Installation Status
         </CardTitle>
-        <Button variant="ghost" size="sm" onClick={onRefresh}>
+        <Button variant="ghost" size="sm" onClick={onRefresh} aria-label="Refresh installation status">
           <RefreshCw className="h-4 w-4" />
         </Button>
       </CardHeader>

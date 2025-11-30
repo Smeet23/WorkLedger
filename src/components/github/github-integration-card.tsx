@@ -6,9 +6,27 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Github, Link2, Unlink, RefreshCw, CheckCircle, Code2, Zap } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
+import { useToast } from '@/components/ui/use-toast'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 interface GitHubIntegrationCardProps {
   employeeId?: string
+}
+
+interface GitHubConnectionData {
+  githubUsername?: string
+  lastSync?: string
+}
+
+interface GitHubSyncData {
+  totalRepos?: number
+  repositories?: number
+  skillCount?: number
+  totalSkills?: number
+  totalCommits?: number
+  skills?: string[]
+  languages?: string[]
+  frameworks?: string[]
 }
 
 export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps) {
@@ -16,9 +34,11 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const [isFullSyncing, setIsFullSyncing] = useState(false)
-  const [connectionData, setConnectionData] = useState<any>(null)
-  const [syncData, setSyncData] = useState<any>(null)
+  const [connectionData, setConnectionData] = useState<GitHubConnectionData | null>(null)
+  const [syncData, setSyncData] = useState<GitHubSyncData | null>(null)
+  const [showFullSyncDialog, setShowFullSyncDialog] = useState(false)
   const searchParams = useSearchParams()
+  const { toast } = useToast()
 
   useEffect(() => {
     checkConnection()
@@ -95,29 +115,26 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
         }, 2000)
       } else {
         console.error('Sync failed:', data.error)
-        alert(data.error || 'Failed to sync repositories')
+        toast({
+          title: "Sync failed",
+          description: data.error || 'Failed to sync repositories',
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Failed to sync GitHub:', error)
-      alert('Failed to sync GitHub repositories. Please try again.')
+      toast({
+        title: "Sync failed",
+        description: "Failed to sync GitHub repositories. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSyncing(false)
     }
   }
 
   const handleFullSync = async () => {
-    const confirmed = confirm(
-      'Full Sync will fetch ALL your repositories and ALL commits.\n\n' +
-      'This includes:\n' +
-      '• All owned repositories (public and private)\n' +
-      '• Organization repositories\n' +
-      '• Repositories where you contributed\n' +
-      '• ALL commits for each repository\n\n' +
-      'This may take several minutes. Continue?'
-    )
-
-    if (!confirmed) return
-
+    setShowFullSyncDialog(false)
     setIsFullSyncing(true)
     try {
       const response = await fetch('/api/github/sync-complete', {
@@ -128,10 +145,10 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
 
       if (response.ok) {
         setSyncData(data.data)
-        alert(`Full Sync Complete!\n\n` +
-              `✓ ${data.data?.totalRepos || 0} repositories\n` +
-              `✓ ${data.data?.totalCommits || 0} commits\n` +
-              `✓ ${data.data?.languages?.length || 0} languages detected`)
+        toast({
+          title: "Full Sync Complete!",
+          description: `${data.data?.totalRepos || 0} repositories, ${data.data?.totalCommits || 0} commits, ${data.data?.languages?.length || 0} languages detected`,
+        })
 
         // Refresh connection data
         await checkConnection()
@@ -142,11 +159,19 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
         }, 1000)
       } else {
         console.error('Full sync failed:', data.error)
-        alert(data.error || 'Failed to complete full sync')
+        toast({
+          title: "Full sync failed",
+          description: data.error || 'Failed to complete full sync',
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Failed to complete full sync:', error)
-      alert('Failed to complete full sync. Please try again.')
+      toast({
+        title: "Full sync failed",
+        description: "Failed to complete full sync. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsFullSyncing(false)
     }
@@ -314,7 +339,7 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
               )}
             </Button>
             <Button
-              onClick={handleFullSync}
+              onClick={() => setShowFullSyncDialog(true)}
               disabled={isSyncing || isFullSyncing}
               variant="default"
               className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
@@ -331,6 +356,15 @@ export function GitHubIntegrationCard({ employeeId }: GitHubIntegrationCardProps
                 </>
               )}
             </Button>
+            <ConfirmationDialog
+              open={showFullSyncDialog}
+              onOpenChange={setShowFullSyncDialog}
+              title="Full Sync"
+              description="Full Sync will fetch ALL your repositories and ALL commits. This includes all owned repositories (public and private), organization repositories, repositories where you contributed, and ALL commits for each repository. This may take several minutes."
+              confirmText="Start Full Sync"
+              onConfirm={handleFullSync}
+              loading={isFullSyncing}
+            />
           </div>
 
           <div className="flex gap-2 mt-2">

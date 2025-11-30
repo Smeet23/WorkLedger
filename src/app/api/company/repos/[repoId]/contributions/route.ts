@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { createApiResponse } from '@/lib/api-response'
+
+const apiResponse = createApiResponse()
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +12,7 @@ export async function GET(
   try {
     const session = await getServerSession()
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiResponse.unauthorized('Authentication required')
     }
 
     // Check if user is a company admin or manager
@@ -18,7 +21,7 @@ export async function GET(
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return apiResponse.notFound('User not found')
     }
 
     // Get employee record with company info
@@ -44,7 +47,7 @@ export async function GET(
     })
 
     if (!repository) {
-      return NextResponse.json({ error: 'Repository not found' }, { status: 404 })
+      return apiResponse.notFound('Repository not found')
     }
 
     // Check access permissions
@@ -53,7 +56,7 @@ export async function GET(
     const isContributor = repository.employeeRepositories.some(er => er.employeeId === userEmployee?.id)
 
     if (!isCompanyAdmin && !isManager && !isContributor) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return apiResponse.forbidden('Access denied')
     }
 
     // Group commits by author
@@ -157,7 +160,7 @@ export async function GET(
         commitCount: er.commitCount
       }))
 
-    return NextResponse.json({
+    return apiResponse.success({
       repository: {
         id: repository.id,
         name: repository.name,
@@ -180,9 +183,6 @@ export async function GET(
     })
   } catch (error) {
     console.error('Failed to fetch repository contributions:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch repository contributions' },
-      { status: 500 }
-    )
+    return apiResponse.internalError('Failed to fetch repository contributions')
   }
 }

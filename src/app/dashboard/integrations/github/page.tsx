@@ -11,11 +11,27 @@ import { EmployeeMatchingInterface } from '@/components/github/employee-matching
 import { RepositorySyncStatus } from '@/components/github/repository-sync'
 import { SkillDetectionProgress } from '@/components/github/skill-detection-progress'
 import { Github, CheckCircle, AlertCircle, Users, GitBranch, Code, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+
+interface GitHubInstallation {
+  id: string
+  companyId: string
+  installationId: string
+  accountLogin: string
+  accountType: string
+  repositorySelection: string
+  isActive: boolean
+  installedAt: string
+  updatedAt: string
+  permissions: Record<string, string>
+  events: string[]
+}
 
 export default function GitHubIntegrationPage() {
   const [loading, setLoading] = useState(true)
-  const [installation, setInstallation] = useState<any>(null)
+  const [installation, setInstallation] = useState<GitHubInstallation | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const { toast } = useToast()
   const [stats, setStats] = useState({
     totalEmployees: 0,
     discoveredEmployees: 0,
@@ -105,13 +121,24 @@ export default function GitHubIntegrationPage() {
       const data = await response.json()
 
       if (data.success) {
-        alert('Auto-discovery started successfully!')
+        toast({
+          title: "Auto-discovery started",
+          description: "Discovering organization members...",
+        })
         fetchInstallationStatus()
       } else {
-        alert(`Error: ${data.error}`)
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      alert('Failed to start auto-discovery')
+      toast({
+        title: "Error",
+        description: "Failed to start auto-discovery",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }

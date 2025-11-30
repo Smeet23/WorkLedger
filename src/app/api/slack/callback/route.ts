@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SlackService } from '@/services/slack/client'
 import { SlackSyncService } from '@/services/slack/sync'
+import { slackOAuthStateSchema } from '@/lib/validations'
+import { ZodError } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,11 +35,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Decode and validate state
+    // Decode and validate state with Zod
     let stateData
     try {
-      stateData = JSON.parse(Buffer.from(state, 'base64').toString())
-    } catch {
+      const decodedState = JSON.parse(Buffer.from(state, 'base64').toString())
+      stateData = slackOAuthStateSchema.parse(decodedState)
+    } catch (parseError) {
+      if (parseError instanceof ZodError) {
+        return NextResponse.json(
+          { error: 'Invalid state parameter', details: parseError.errors },
+          { status: 400 }
+        )
+      }
       return NextResponse.json(
         { error: 'Invalid state parameter' },
         { status: 400 }

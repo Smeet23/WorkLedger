@@ -1,13 +1,11 @@
-import { NextRequest } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { withCompanyAdmin } from '@/lib/api-auth'
 import { sendEmail } from '@/lib/email'
 import { renderInvitationEmail } from '@/lib/email-templates'
 import { config } from '@/lib/config'
-import { createApiResponse, withErrorHandling, validateRequest } from '@/lib/api-response'
+import { createApiResponse, validateRequest } from '@/lib/api-response'
 import { inviteEmployeeSchema } from '@/lib/validations'
 import {
-  AuthorizationError,
   NotFoundError,
   DuplicateResourceError,
   ConflictError,
@@ -16,19 +14,14 @@ import {
 import { loggers, eventLoggers } from '@/lib/logger'
 import { generateSecureToken } from '@/lib/crypto'
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const apiResponse = createApiResponse()
+const apiResponse = createApiResponse()
+
+export const POST = withCompanyAdmin(async (request, { user, companyId }) => {
   const logger = loggers.apiRequest('POST', '/api/company/invitations/send')
 
-  // Authentication check
-  const session = await getServerSession()
-  if (!session?.user || session.user.role !== 'company_admin') {
-    throw new AuthorizationError(ErrorMessages.INSUFFICIENT_PERMISSIONS)
-  }
-
   logger.info('Processing invitation request', {
-    adminId: session.user.id,
-    adminEmail: session.user.email
+    adminId: user.id,
+    adminEmail: user.email
   })
 
   // Validate request body
@@ -36,15 +29,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Get admin user with company info
   const adminEmployee = await db.employee.findFirst({
-    where: { email: session.user.email },
+    where: { email: user.email },
     include: { company: true }
   })
 
   if (!adminEmployee?.company) {
-    throw new NotFoundError('Company', session.user.email)
+    throw new NotFoundError('Company', user.email)
   }
 
-  const companyLogger = logger.withCompany(adminEmployee.company.id)
+  const companyLogger = logger.withCompany(companyId)
 
   // Check if employee already exists in the company
   const existingEmployee = await db.employee.findUnique({
@@ -83,7 +76,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       title: data.title,
       department: data.department,
       companyId: adminEmployee.company.id,
-      invitedBy: session.user.email,
+      invitedBy: user.email,
       status: 'pending',
       expiresAt: expiryDate,
       token: generateSecureToken() // Use secure token generation
@@ -110,8 +103,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         html: await renderInvitationEmail({
           firstName: data.firstName,
           companyName: adminEmployee.company.name,
-          inviterName: session.user.firstName + ' ' + session.user.lastName,
-          inviterEmail: session.user.email,
+          inviterName: user.firstName + ' ' + user.lastName,
+          inviterEmail: user.email,
           role: data.role,
           title: data.title,
           department: data.department,
@@ -125,7 +118,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       eventLoggers.invitationSent(
         adminEmployee.company.id,
         data.email,
-        session.user.email
+        user.email
       )
 
       companyLogger.info('Invitation email sent', {

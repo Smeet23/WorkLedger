@@ -1,30 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { withAuth } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
 import { GitHubService } from '@/services/github/client'
 import { Octokit } from '@octokit/rest'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    }
+const apiResponse = createApiResponse()
 
-    const employee = await db.employee.findFirst({
-      where: { email: session.user.email },
+export const GET = withAuth(async (request, { employee }) => {
+  try {
+    const employeeWithConnection = await db.employee.findFirst({
+      where: { id: employee.id },
       include: { githubConnection: true }
     })
 
-    if (!employee?.githubConnection) {
-      return NextResponse.json({ error: 'No GitHub connection' }, { status: 404 })
+    if (!employeeWithConnection?.githubConnection) {
+      return apiResponse.notFound('No GitHub connection')
     }
 
     const connection = await GitHubService.getConnection(employee.id)
     if (!connection) {
-      return NextResponse.json({ error: 'Connection not found' }, { status: 404 })
+      return apiResponse.notFound('Connection not found')
     }
 
     const octokit = new Octokit({ auth: connection.accessToken })
@@ -137,13 +134,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(results, { status: 200 })
-
+    return apiResponse.success(results)
   } catch (error: any) {
     console.error('Debug endpoint error:', error)
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack
-    }, { status: 500 })
+    return apiResponse.internalError(error.message || 'Debug endpoint failed')
   }
-}
+})

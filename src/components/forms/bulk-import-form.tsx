@@ -25,6 +25,24 @@ interface ParsedEmployee {
   errors: string[]
 }
 
+interface InvitationDetail {
+  email: string
+  firstName: string
+  lastName: string
+  role: string
+  title?: string
+  department?: string
+}
+
+interface ImportResult {
+  invitationsCount?: number
+  importedCount?: number
+  details?: {
+    invitations?: InvitationDetail[]
+    skipped?: Array<{ email: string; reason: string }>
+  }
+}
+
 export function BulkImportForm({ companyId, companyDomain }: BulkImportFormProps) {
   const [file, setFile] = useState<File | null>(null)
   const [parsedData, setParsedData] = useState<ParsedEmployee[]>([])
@@ -33,7 +51,7 @@ export function BulkImportForm({ companyId, companyDomain }: BulkImportFormProps
   const [success, setSuccess] = useState("")
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'complete'>('upload')
   const [sendEmails, setSendEmails] = useState(true)
-  const [importResult, setImportResult] = useState<any>(null)
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const router = useRouter()
 
   const validRoles = ['DEVELOPER', 'DESIGNER', 'MANAGER', 'SALES', 'MARKETING', 'OTHER']
@@ -247,14 +265,14 @@ mike.johnson@example.com,Mike,Johnson,MANAGER,Engineering Manager,Engineering,20
           <Card className="border-green-200 bg-green-50">
             <CardContent className="pt-6">
               <div className="space-y-4">
-                {importResult.details?.invitations?.length > 0 && (
+                {importResult.details?.invitations && importResult.details.invitations.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
                       <Users className="w-4 h-4 mr-2" />
                       Invitations Created:
                     </h4>
                     <div className="space-y-1 max-h-40 overflow-y-auto">
-                      {importResult.details.invitations.slice(0, 5).map((inv: any, index: number) => (
+                      {importResult.details.invitations.slice(0, 5).map((inv: InvitationDetail, index: number) => (
                         <div key={index} className="flex items-center justify-between text-sm bg-white p-2 rounded">
                           <span>
                             {inv.firstName} {inv.lastName} ({inv.email})
@@ -278,7 +296,7 @@ mike.johnson@example.com,Mike,Johnson,MANAGER,Engineering Manager,Engineering,20
                   </div>
                 )}
 
-                {importResult.details?.skipped?.length > 0 && (
+                {importResult.details?.skipped && importResult.details.skipped.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Skipped (Already Exist):</h4>
                     <p className="text-sm text-gray-600">

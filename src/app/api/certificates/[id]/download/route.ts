@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { createApiResponse } from '@/lib/api-response'
 import { format } from 'date-fns'
+
+const apiResponse = createApiResponse()
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +14,7 @@ export async function GET(
     // Check authentication
     const session = await getServerSession()
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiResponse.unauthorized('Authentication required')
     }
 
     // Handle params which might be a Promise in newer Next.js versions
@@ -29,7 +32,7 @@ export async function GET(
     })
 
     if (!certificate) {
-      return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
+      return apiResponse.notFound('Certificate not found')
     }
 
     // Check if user has access to this certificate
@@ -37,7 +40,7 @@ export async function GET(
       // Check if user is a company admin
       const isAdmin = session.user.role === 'company_admin'
       if (!isAdmin) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        return apiResponse.forbidden('Access denied')
       }
     }
 
@@ -313,9 +316,6 @@ export async function GET(
     })
   } catch (error) {
     console.error('Certificate download error:', error)
-    return NextResponse.json(
-      { error: 'Failed to download certificate' },
-      { status: 500 }
-    )
+    return apiResponse.internalError('Failed to download certificate')
   }
 }

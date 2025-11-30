@@ -257,6 +257,7 @@ model GitHubActivity {
   updatedAt       DateTime  @updatedAt
 
   @@unique([employeeId, repoName, periodStart])
+  @@index([employeeId, periodStart]) // Range queries for activity periods
   @@map("github_activities")
 }
 
@@ -353,6 +354,8 @@ model AuditLog {
   // Timestamp
   timestamp   DateTime @default(now())
 
+  @@index([companyId, timestamp]) // Time-based log queries
+  @@index([timestamp]) // Global time-based queries
   @@map("audit_logs")
 }
 
@@ -386,6 +389,7 @@ model User {
   updatedAt   DateTime @updatedAt
   lastLogin   DateTime?
 
+  @@index([email]) // Frequent auth lookups by email
   @@map("users")
 }
 

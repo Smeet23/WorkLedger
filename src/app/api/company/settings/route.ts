@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { withAuth, withCompanyAdmin } from '@/lib/api-auth'
 import { createApiResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
@@ -9,7 +8,6 @@ export const dynamic = 'force-dynamic'
 const apiResponse = createApiResponse()
 
 const updateSettingsSchema = z.object({
-  companyId: z.string(),
   shareSkills: z.boolean(),
   shareAchievements: z.boolean(),
   shareProjectTypes: z.boolean(),
@@ -25,37 +23,15 @@ const updateSettingsSchema = z.object({
   size: z.string().optional()
 })
 
-export async function PUT(request: NextRequest) {
+export const PUT = withCompanyAdmin(async (request, { companyId }) => {
   try {
-    const session = await getServerSession()
-
-    if (!session?.user) {
-      return apiResponse.unauthorized('You must be logged in')
-    }
-
-    if (session.user.role !== 'company_admin') {
-      return apiResponse.forbidden('Only company administrators can update settings')
-    }
-
     const body = await request.json()
     const validatedData = updateSettingsSchema.parse(body)
-
-    // Verify the company belongs to the user
-    const employee = await db.employee.findFirst({
-      where: {
-        email: session.user.email,
-        companyId: validatedData.companyId
-      }
-    })
-
-    if (!employee) {
-      return apiResponse.forbidden('You do not have permission to update this company')
-    }
 
     // Update company profile if provided
     if (validatedData.name || validatedData.website || validatedData.industry || validatedData.size) {
       await db.company.update({
-        where: { id: validatedData.companyId },
+        where: { id: companyId },
         data: {
           ...(validatedData.name && { name: validatedData.name }),
           ...(validatedData.website !== undefined && { website: validatedData.website || null }),
@@ -67,9 +43,7 @@ export async function PUT(request: NextRequest) {
 
     // Update or create settings
     const settings = await db.companySettings.upsert({
-      where: {
-        companyId: validatedData.companyId
-      },
+      where: { companyId },
       update: {
         shareSkills: validatedData.shareSkills,
         shareAchievements: validatedData.shareAchievements,
@@ -81,7 +55,7 @@ export async function PUT(request: NextRequest) {
         minTrackingDays: validatedData.minTrackingDays
       },
       create: {
-        companyId: validatedData.companyId,
+        companyId,
         shareSkills: validatedData.shareSkills,
         shareAchievements: validatedData.shareAchievements,
         shareProjectTypes: validatedData.shareProjectTypes,
@@ -93,46 +67,33 @@ export async function PUT(request: NextRequest) {
       }
     })
 
-    return apiResponse.success(settings)
+    return apiResponse.success(settings, 'Settings updated successfully')
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return apiResponse.badRequest('Invalid request data', error.errors)
+      return apiResponse.validation(
+        error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+      )
     }
 
     console.error('Settings update error:', error)
-    return apiResponse.error('Failed to update settings')
+    return apiResponse.internalError('Failed to update settings')
   }
-}
+})
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request, { companyId }) => {
   try {
-    const session = await getServerSession()
-
-    if (!session?.user) {
-      return apiResponse.unauthorized('You must be logged in')
-    }
-
-    // Get company for the user
-    const employee = await db.employee.findFirst({
-      where: {
-        email: session.user.email
-      },
-      include: {
-        company: {
-          include: {
-            settings: true
-          }
-        }
-      }
+    const company = await db.company.findUnique({
+      where: { id: companyId },
+      include: { settings: true }
     })
 
-    if (!employee?.company) {
-      return apiResponse.notFound('Company not found')
+    if (!company) {
+      return apiResponse.notFound('Company')
     }
 
-    return apiResponse.success(employee.company.settings)
+    return apiResponse.success(company.settings)
   } catch (error) {
     console.error('Settings fetch error:', error)
-    return apiResponse.error('Failed to fetch settings')
+    return apiResponse.internalError('Failed to fetch settings')
   }
-}
+})

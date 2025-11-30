@@ -1,22 +1,47 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, GitlabIcon as GitLab, CheckCircle, XCircle, RefreshCw, Unplug } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 interface GitLabIntegrationCardProps {
   employeeId?: string
   compact?: boolean
 }
 
+interface GitLabUser {
+  username: string
+  name: string
+  avatarUrl?: string
+}
+
+interface GitLabIntegration {
+  isActive: boolean
+  user?: GitLabUser
+  lastSync?: string
+  stats?: {
+    skillsDetected: number
+  }
+}
+
+interface GitLabStatus {
+  connected: boolean
+  integration?: GitLabIntegration
+}
+
 export function GitLabIntegrationCard({ employeeId, compact = false }: GitLabIntegrationCardProps) {
   const [loading, setLoading] = useState(true)
   const [syncing, setsyncing] = useState(false)
-  const [status, setStatus] = useState<any>(null)
+  const [status, setStatus] = useState<GitLabStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchStatus()
@@ -67,7 +92,10 @@ export function GitLabIntegrationCard({ employeeId, compact = false }: GitLabInt
       const data = await response.json()
 
       if (data.success) {
-        alert(`Sync completed! Detected ${data.data.skillsDetected} skills.`)
+        toast({
+          title: "Sync completed",
+          description: `Detected ${data.data.skillsDetected} skills.`,
+        })
         await fetchStatus()
       } else {
         setError(data.error?.message || 'Sync failed')
@@ -80,16 +108,16 @@ export function GitLabIntegrationCard({ employeeId, compact = false }: GitLabInt
   }
 
   const handleDisconnect = async () => {
-    if (!confirm('Are you sure you want to disconnect GitLab? Your skill data will be preserved.')) {
-      return
-    }
-
     try {
       setLoading(true)
       const response = await fetch('/api/gitlab/disconnect', { method: 'POST' })
       const data = await response.json()
 
       if (data.success) {
+        toast({
+          title: "GitLab disconnected",
+          description: "Your skill data has been preserved.",
+        })
         await fetchStatus()
       } else {
         setError(data.error?.message || 'Failed to disconnect')
@@ -98,6 +126,7 @@ export function GitLabIntegrationCard({ employeeId, compact = false }: GitLabInt
       setError('Failed to disconnect')
     } finally {
       setLoading(false)
+      setShowDisconnectDialog(false)
     }
   }
 
@@ -147,10 +176,12 @@ export function GitLabIntegrationCard({ employeeId, compact = false }: GitLabInt
             {status.integration?.user && (
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 {status.integration.user.avatarUrl && (
-                  <img
+                  <Image
                     src={status.integration.user.avatarUrl}
                     alt={status.integration.user.username}
-                    className="h-10 w-10 rounded-full"
+                    width={40}
+                    height={40}
+                    className="rounded-full"
                   />
                 )}
                 <div className="flex-1">
@@ -224,13 +255,23 @@ export function GitLabIntegrationCard({ employeeId, compact = false }: GitLabInt
               )}
             </Button>
             <Button
-              onClick={handleDisconnect}
+              onClick={() => setShowDisconnectDialog(true)}
               variant="destructive"
               disabled={loading}
             >
               <Unplug className="mr-2 h-4 w-4" />
               Disconnect
             </Button>
+            <ConfirmationDialog
+              open={showDisconnectDialog}
+              onOpenChange={setShowDisconnectDialog}
+              title="Disconnect GitLab"
+              description="Are you sure you want to disconnect GitLab? Your skill data will be preserved."
+              confirmText="Disconnect"
+              variant="destructive"
+              onConfirm={handleDisconnect}
+              loading={loading}
+            />
           </>
         ) : (
           <Button

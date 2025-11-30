@@ -4,10 +4,12 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/use-toast'
 
 export function FullSyncButton() {
   const [isSyncing, setIsSyncing] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const handleSync = async () => {
     setIsSyncing(true)
@@ -19,13 +21,24 @@ export function FullSyncButton() {
       const data = await response.json()
 
       if (response.ok) {
-        alert(`Full sync complete! Synced ${data.data?.totalRepos || 0} repositories with ${data.data?.totalCommits || 0} commits`)
+        toast({
+          title: "Full sync complete!",
+          description: `Synced ${data.data?.totalRepos || 0} repositories with ${data.data?.totalCommits || 0} commits`,
+        })
         router.refresh()
       } else {
-        alert(`Sync failed: ${data.error}`)
+        toast({
+          title: "Sync failed",
+          description: data.error,
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      alert('Failed to sync. Please try again.')
+      toast({
+        title: "Sync failed",
+        description: "Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSyncing(false)
     }

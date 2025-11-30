@@ -31,6 +31,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Github, User, Link, Unlink, CheckCircle, XCircle, AlertCircle, Search, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 interface UnmatchedMember {
   id: string
@@ -63,6 +65,8 @@ export function EmployeeMatchingInterface({ companyId }: EmployeeMatchingInterfa
   const [selectedMember, setSelectedMember] = useState<UnmatchedMember | null>(null)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
   const [linking, setLinking] = useState(false)
+  const [unlinkEmployeeId, setUnlinkEmployeeId] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchData()
@@ -109,23 +113,32 @@ export function EmployeeMatchingInterface({ companyId }: EmployeeMatchingInterfa
 
       const data = await response.json()
       if (data.success) {
-        alert('Successfully linked GitHub member to employee!')
+        toast({
+          title: "Success",
+          description: "Successfully linked GitHub member to employee!",
+        })
         setSelectedMember(null)
         setSelectedEmployeeId('')
         fetchData()
       } else {
-        alert(`Error: ${data.error}`)
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      alert('Failed to link member')
+      toast({
+        title: "Error",
+        description: "Failed to link member",
+        variant: "destructive",
+      })
     } finally {
       setLinking(false)
     }
   }
 
   const handleUnlinkEmployee = async (employeeId: string) => {
-    if (!confirm('Are you sure you want to unlink this GitHub account?')) return
-
     try {
       const response = await fetch('/api/github/unlink-member', {
         method: 'POST',
@@ -135,13 +148,26 @@ export function EmployeeMatchingInterface({ companyId }: EmployeeMatchingInterfa
 
       const data = await response.json()
       if (data.success) {
-        alert('Successfully unlinked GitHub account')
+        toast({
+          title: "Success",
+          description: "Successfully unlinked GitHub account",
+        })
         fetchData()
       } else {
-        alert(`Error: ${data.error}`)
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      alert('Failed to unlink member')
+      toast({
+        title: "Error",
+        description: "Failed to unlink member",
+        variant: "destructive",
+      })
+    } finally {
+      setUnlinkEmployeeId(null)
     }
   }
 
@@ -237,11 +263,20 @@ export function EmployeeMatchingInterface({ companyId }: EmployeeMatchingInterfa
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleUnlinkEmployee(employee.id)}
+                      onClick={() => setUnlinkEmployeeId(employee.id)}
                     >
                       <Unlink className="h-4 w-4 mr-1" />
                       Unlink
                     </Button>
+                    <ConfirmationDialog
+                      open={unlinkEmployeeId === employee.id}
+                      onOpenChange={(open) => !open && setUnlinkEmployeeId(null)}
+                      title="Unlink GitHub Account"
+                      description="Are you sure you want to unlink this GitHub account?"
+                      confirmText="Unlink"
+                      variant="destructive"
+                      onConfirm={() => handleUnlinkEmployee(employee.id)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GitHubService } from '@/services/github/client'
 import { db } from '@/lib/db'
+import { githubOAuthSchema } from '@/lib/validations'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,11 +17,16 @@ export async function GET(request: NextRequest) {
     const employeeId = request.cookies.get('github_oauth_employee')?.value
     const returnUrl = request.cookies.get('github_oauth_return')?.value || '/employee/dashboard'
 
-    if (!code || !state || !storedState || state !== storedState) {
+    // Validate OAuth params with Zod
+    const oauthValidation = githubOAuthSchema.safeParse({ code, state })
+    if (!oauthValidation.success || !storedState || state !== storedState) {
       return NextResponse.redirect(
         new URL(`${returnUrl}?error=invalid_state`, baseUrl)
       )
     }
+
+    // Use validated data
+    const validatedCode = oauthValidation.data.code
 
     if (!employeeId) {
       return NextResponse.redirect(
@@ -30,11 +36,11 @@ export async function GET(request: NextRequest) {
 
     console.log('=== GITHUB CALLBACK START ===')
     console.log('Employee ID:', employeeId)
-    console.log('Code received:', !!code)
+    console.log('Code received:', !!validatedCode)
 
     // Exchange code for access token
     console.log('Exchanging code for token...')
-    const tokenData = await GitHubService.exchangeCodeForToken(code)
+    const tokenData = await GitHubService.exchangeCodeForToken(validatedCode)
     console.log('Token received:', !!tokenData.access_token)
     console.log('Token scope:', tokenData.scope)
     console.log('Token type:', tokenData.token_type)

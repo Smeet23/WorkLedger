@@ -1,24 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts'
 import { Code, TrendingUp, Users, Zap, RefreshCw, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+
+// Dynamic import for recharts - only loaded when charts are rendered
+const RechartsComponents = lazy(() => import('./skill-detection-charts'))
 
 interface SkillSummary {
   skillName: string
@@ -42,12 +33,20 @@ interface SkillDetectionProgressProps {
   companyId: string
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+// Chart loading fallback
+function ChartSkeleton() {
+  return (
+    <div className="w-full h-[300px] flex items-center justify-center bg-gray-50 rounded-lg">
+      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+    </div>
+  )
+}
 
 export function SkillDetectionProgress({ companyId }: SkillDetectionProgressProps) {
   const [stats, setStats] = useState<SkillDetectionStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchSkillStats()
@@ -79,13 +78,20 @@ export function SkillDetectionProgress({ companyId }: SkillDetectionProgressProp
 
       const data = await response.json()
       if (data.success) {
-        alert('Skill analysis started! This may take a few minutes.')
+        toast({
+          title: "Skill analysis started",
+          description: "This may take a few minutes.",
+        })
         // Poll for updates
         setTimeout(fetchSkillStats, 5000)
       }
     } catch (error) {
       console.error('Failed to start skill analysis:', error)
-      alert('Failed to start skill analysis')
+      toast({
+        title: "Error",
+        description: "Failed to start skill analysis",
+        variant: "destructive",
+      })
     } finally {
       setAnalyzing(false)
     }
@@ -109,17 +115,6 @@ export function SkillDetectionProgress({ companyId }: SkillDetectionProgressProp
       </div>
     )
   }
-
-  const pieData = Object.entries(stats.skillCategories).map(([name, value]) => ({
-    name,
-    value
-  }))
-
-  const barData = stats.topSkills.map(skill => ({
-    name: skill.skillName,
-    employees: skill.employeeCount,
-    projects: skill.totalProjects
-  }))
 
   return (
     <div className="space-y-6">
@@ -204,52 +199,18 @@ export function SkillDetectionProgress({ companyId }: SkillDetectionProgressProp
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Skill Categories Pie Chart */}
-        <Card>
-          <CardContent className="pt-6">
-            <h4 className="text-sm font-medium mb-4">Skills by Category</h4>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Top Skills Bar Chart */}
-        <Card>
-          <CardContent className="pt-6">
-            <h4 className="text-sm font-medium mb-4">Top Skills by Employee Count</h4>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="employees" fill="#8884d8" name="Employees" />
-                <Bar dataKey="projects" fill="#82ca9d" name="Projects" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Charts - Dynamically loaded */}
+      <Suspense fallback={
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card><CardContent className="pt-6"><ChartSkeleton /></CardContent></Card>
+          <Card><CardContent className="pt-6"><ChartSkeleton /></CardContent></Card>
+        </div>
+      }>
+        <RechartsComponents
+          skillCategories={stats.skillCategories}
+          topSkills={stats.topSkills}
+        />
+      </Suspense>
 
       {/* Top Skills Table */}
       <Card>

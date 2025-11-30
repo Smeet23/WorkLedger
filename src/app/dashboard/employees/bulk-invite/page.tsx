@@ -17,12 +17,21 @@ interface ParsedEmployee {
   department?: string
 }
 
+interface BulkInviteResult {
+  invitationsCount: number
+  githubStats?: {
+    withGitHub: number
+    withoutGitHub: number
+    matchRate: number
+  }
+}
+
 export default function BulkInvitePage() {
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [employees, setEmployees] = useState<ParsedEmployee[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<BulkInviteResult | null>(null)
   const [error, setError] = useState("")
 
   const handleFileUpload = async (uploadedFile: File) => {

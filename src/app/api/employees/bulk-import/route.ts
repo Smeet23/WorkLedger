@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server"
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { getServerSession } from "@/lib/session"
+import { withCompanyAdmin } from "@/lib/api-auth"
+import { createApiResponse } from "@/lib/api-response"
+
+const apiResponse = createApiResponse()
 
 const employeeSchema = z.object({
   email: z.string().email(),
@@ -15,41 +17,12 @@ const employeeSchema = z.object({
 
 const bulkImportSchema = z.object({
   employees: z.array(employeeSchema),
-  companyId: z.string(),
-  companyDomain: z.string(),
 })
 
-export async function POST(request: Request) {
+export const POST = withCompanyAdmin(async (request, { user, companyId }) => {
   try {
-    // Verify the user is authenticated and is a company admin
-    const session = await getServerSession()
-
-    if (!session?.user || session.user.role !== "company_admin") {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
-    const { employees, companyId, companyDomain } = bulkImportSchema.parse(body)
-
-    // Verify that the company exists and the user has access to it
-    const company = await db.company.findUnique({
-      where: { id: companyId },
-      include: {
-        employees: {
-          where: { email: session.user.email }
-        }
-      }
-    })
-
-    if (!company || company.employees.length === 0) {
-      return NextResponse.json(
-        { error: "Company not found or access denied" },
-        { status: 403 }
-      )
-    }
+    const { employees } = bulkImportSchema.parse(body)
 
     // Check for existing employees in this company
     const existingEmails = await db.employee.findMany({
@@ -66,18 +39,15 @@ export async function POST(request: Request) {
     const newEmployees = employees.filter(emp => !existingEmailSet.has(emp.email))
 
     if (newEmployees.length === 0) {
-      return NextResponse.json(
-        { error: "All employees already exist in the company" },
-        { status: 400 }
-      )
+      return apiResponse.badRequest("All employees already exist in the company")
     }
 
-    // NEW: Phase 2.5 - Fetch GitHub org members for matching
+    // Fetch GitHub org members for matching
     const githubOrgMembers = await db.gitHubOrganizationMember.findMany({
       where: {
         companyId,
         isActive: true,
-        employeeId: null // Only unlinked members
+        employeeId: null
       }
     })
 
@@ -92,23 +62,21 @@ export async function POST(request: Request) {
     let withGitHub = 0
     let withoutGitHub = 0
 
-    // Import employees in a transaction - create invitations instead
+    // Import employees in a transaction
     const result = await db.$transaction(async (tx) => {
       const createdInvitations = []
 
       for (const employee of newEmployees) {
-        // NEW: Try to match with GitHub org member by email
         const githubMember = githubEmailMap.get(employee.email.toLowerCase())
-        // Check if there's already a pending invitation
+
         const existingInvitation = await tx.invitation.findFirst({
           where: {
             email: employee.email,
-            companyId: companyId,
+            companyId,
             status: "pending"
           }
         })
 
-        // Track statistics
         if (githubMember) {
           withGitHub++
         } else {
@@ -116,7 +84,6 @@ export async function POST(request: Request) {
         }
 
         if (existingInvitation) {
-          // Update existing invitation
           const updatedInvitation = await tx.invitation.update({
             where: { id: existingInvitation.id },
             data: {
@@ -125,10 +92,10 @@ export async function POST(request: Request) {
               role: employee.role,
               title: employee.title,
               department: employee.department,
-              invitedBy: session.user.email,
-              suggestedGithubUsername: githubMember?.githubUsername || null, // NEW
-              githubOrgMemberId: githubMember?.id || null, // NEW
-              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Reset expiry
+              invitedBy: user.email,
+              suggestedGithubUsername: githubMember?.githubUsername || null,
+              githubOrgMemberId: githubMember?.id || null,
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
               updatedAt: new Date()
             }
           })
@@ -138,7 +105,6 @@ export async function POST(request: Request) {
             githubUsername: githubMember?.githubUsername
           })
         } else {
-          // Create new invitation
           const invitation = await tx.invitation.create({
             data: {
               email: employee.email,
@@ -147,11 +113,11 @@ export async function POST(request: Request) {
               role: employee.role,
               title: employee.title,
               department: employee.department,
-              companyId: companyId,
-              invitedBy: session.user.email,
-              suggestedGithubUsername: githubMember?.githubUsername || null, // NEW
-              githubOrgMemberId: githubMember?.id || null, // NEW
-              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+              companyId,
+              invitedBy: user.email,
+              suggestedGithubUsername: githubMember?.githubUsername || null,
+              githubOrgMemberId: githubMember?.id || null,
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
             }
           })
           createdInvitations.push({
@@ -165,22 +131,12 @@ export async function POST(request: Request) {
       return createdInvitations
     })
 
-    // Generate invitation URLs
-    const invitationUrls = result.map(invitation => ({
-      email: invitation.email,
-      invitationUrl: `${process.env.NEXTAUTH_URL}/auth/accept-invitation/${invitation.token}`,
-      firstName: invitation.firstName,
-      lastName: invitation.lastName
-    }))
+    console.log("Bulk invitations created:", result.length)
 
-    // Log invitation details
-    console.log("Bulk invitations created:", invitationUrls)
-
-    return NextResponse.json({
-      message: `Successfully created ${result.length} invitations`,
+    return apiResponse.success({
       invitationsCount: result.length,
       skippedCount: employees.length - newEmployees.length,
-      githubStats: { // NEW: Phase 2.5
+      githubStats: {
         withGitHub,
         withoutGitHub,
         total: result.length,
@@ -193,28 +149,23 @@ export async function POST(request: Request) {
           firstName: inv.firstName,
           lastName: inv.lastName,
           role: inv.role,
-          token: inv.token,
-          hasGitHub: inv.hasGitHub, // NEW
-          githubUsername: inv.githubUsername, // NEW
+          hasGitHub: inv.hasGitHub,
+          githubUsername: inv.githubUsername,
           invitationUrl: `${process.env.NEXTAUTH_URL}/auth/accept-invitation/${inv.token}`
         })),
         skipped: existingEmailSet.size > 0 ? Array.from(existingEmailSet) : []
       }
-    })
+    }, `Successfully created ${result.length} invitations`)
 
   } catch (error) {
     console.error("Bulk import error:", error)
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input data", details: error.errors },
-        { status: 400 }
+      return apiResponse.validation(
+        error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
       )
     }
 
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    return apiResponse.internalError("Failed to import employees")
   }
-}
+})

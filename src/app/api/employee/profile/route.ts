@@ -1,18 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { updateProfileSchema } from '@/lib/validations'
+import { ZodError } from 'zod'
+import { withAuth } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+const apiResponse = createApiResponse()
 
-    const employee = await db.employee.findFirst({
-      where: { email: session.user.email },
+export const GET = withAuth(async (request, { user, employee }) => {
+  try {
+    const employeeWithDetails = await db.employee.findUnique({
+      where: { id: employee.id },
       include: {
         company: true,
         skillRecords: {
@@ -22,83 +21,69 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    if (!employee) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
+    if (!employeeWithDetails) {
+      return apiResponse.notFound('Employee', employee.id)
     }
 
-    return NextResponse.json({
-      id: employee.id,
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      email: employee.email,
-      title: employee.title,
-      department: employee.department,
-      bio: employee.bio,
-      linkedinUrl: employee.linkedinUrl,
-      githubUrl: employee.githubConnection?.githubUsername
-        ? `https://github.com/${employee.githubConnection.githubUsername}`
+    return apiResponse.success({
+      id: employeeWithDetails.id,
+      firstName: employeeWithDetails.firstName,
+      lastName: employeeWithDetails.lastName,
+      email: employeeWithDetails.email,
+      title: employeeWithDetails.title,
+      department: employeeWithDetails.department,
+      bio: employeeWithDetails.bio,
+      linkedinUrl: employeeWithDetails.linkedinUrl,
+      githubUrl: employeeWithDetails.githubConnection?.githubUsername
+        ? `https://github.com/${employeeWithDetails.githubConnection.githubUsername}`
         : '',
-      personalWebsite: employee.personalWebsite,
-      role: session.user.role, // User role from session (company_admin or user)
-      employeeRole: employee.role, // Employee role (DEVELOPER, MANAGER, etc.)
-      startDate: employee.startDate,
+      personalWebsite: employeeWithDetails.personalWebsite,
+      role: user.role,
+      employeeRole: employeeWithDetails.role,
+      startDate: employeeWithDetails.startDate,
       company: {
-        name: employee.company.name,
-        domain: employee.company.domain
+        name: employeeWithDetails.company.name,
+        domain: employeeWithDetails.company.domain
       },
-      skills: employee.skillRecords.map(sr => sr.skill.name)
+      skills: employeeWithDetails.skillRecords.map(sr => sr.skill.name)
     })
   } catch (error) {
     console.error('Failed to fetch profile:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch profile' },
-      { status: 500 }
-    )
+    return apiResponse.internalError('Failed to fetch profile')
   }
-}
+})
 
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request, { employee }) => {
   try {
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const employee = await db.employee.findFirst({
-      where: { email: session.user.email }
-    })
-
-    if (!employee) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
-    }
-
+    // Parse and validate request body
     const body = await request.json()
+    const validatedData = updateProfileSchema.parse(body)
 
     // Update employee profile
     const updated = await db.employee.update({
       where: { id: employee.id },
       data: {
-        firstName: body.firstName || employee.firstName,
-        lastName: body.lastName || employee.lastName,
-        title: body.title,
-        department: body.department,
-        bio: body.bio,
-        linkedinUrl: body.linkedinUrl,
-        personalWebsite: body.personalWebsite,
+        firstName: validatedData.firstName || employee.firstName,
+        lastName: validatedData.lastName || employee.lastName,
+        title: validatedData.title,
+        department: validatedData.department,
+        bio: validatedData.bio,
+        linkedinUrl: validatedData.linkedinUrl || null,
+        personalWebsite: validatedData.personalWebsite || null,
         updatedAt: new Date()
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      message: 'Profile updated successfully',
-      profile: updated
-    })
+    return apiResponse.success({ profile: updated }, 'Profile updated successfully')
   } catch (error) {
     console.error('Failed to update profile:', error)
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    )
+
+    if (error instanceof ZodError) {
+      return apiResponse.validation(
+        error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+      )
+    }
+
+    return apiResponse.internalError('Failed to update profile')
   }
-}
+})

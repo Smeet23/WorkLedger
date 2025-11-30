@@ -1,33 +1,13 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { GitLabService } from '@/services/gitlab/client'
 import { db } from '@/lib/db'
+import { withAuth } from '@/lib/api-auth'
 import { createApiResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 
 const apiResponse = createApiResponse()
 
-/**
- * POST /api/gitlab/disconnect
- * Disconnect GitLab integration for current user
- */
-export async function POST(request: Request) {
+export const POST = withAuth(async (request, { employee }) => {
   try {
-    const session = await getServerSession()
-
-    if (!session?.user?.id) {
-      return apiResponse.unauthorized('Authentication required')
-    }
-
-    // Find employee
-    const employee = await db.employee.findUnique({
-      where: { email: session.user.email || '' },
-    })
-
-    if (!employee) {
-      return apiResponse.notFound('Employee')
-    }
-
     // Get GitLab connection
     const connection = await GitLabService.getConnection(employee.id)
 
@@ -49,11 +29,12 @@ export async function POST(request: Request) {
       integrationId: connection.id,
     })
 
-    return apiResponse.success({
-      message: 'GitLab integration disconnected successfully',
-    })
+    return apiResponse.success(
+      { disconnected: true },
+      'GitLab integration disconnected successfully'
+    )
   } catch (error) {
     logger.error('GitLab disconnect failed', error)
-    return apiResponse.error(error)
+    return apiResponse.internalError('Failed to disconnect GitLab')
   }
-}
+})

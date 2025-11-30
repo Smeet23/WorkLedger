@@ -1,31 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { withAuth } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
 
-export async function POST(request: NextRequest) {
+const apiResponse = createApiResponse()
+
+export const POST = withAuth(async (request, { employee }) => {
   try {
-    // Check authentication
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get employee record
-    const employee = await db.employee.findFirst({
-      where: { email: session.user.email }
-    })
-
-    if (!employee) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
-    }
-
     // Check if connected
     const connection = await db.gitHubConnection.findUnique({
       where: { employeeId: employee.id }
     })
 
     if (!connection) {
-      return NextResponse.json({ error: 'No GitHub connection found' }, { status: 404 })
+      return apiResponse.notFound('GitHub connection')
     }
 
     // Soft delete the connection (mark as inactive)
@@ -46,15 +33,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
-      message: 'Successfully disconnected from GitHub',
-      success: true
-    })
+    return apiResponse.success(
+      { disconnected: true },
+      'Successfully disconnected from GitHub'
+    )
   } catch (error) {
     console.error('GitHub disconnect error:', error)
-    return NextResponse.json(
-      { error: 'Failed to disconnect GitHub' },
-      { status: 500 }
-    )
+    return apiResponse.internalError('Failed to disconnect GitHub')
   }
-}
+})

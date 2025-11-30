@@ -1,42 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { withCompanyAdmin } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+const apiResponse = createApiResponse()
+
+export const GET = withCompanyAdmin(async (request, { companyId }) => {
   try {
-    const session = await getServerSession()
-    if (!session?.user || session.user.role !== 'company_admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get admin user
-    const admin = await db.user.findUnique({
-      where: { id: session.user.id }
-    })
-
-    if (!admin) {
-      return NextResponse.json({ error: 'Admin user not found' }, { status: 404 })
-    }
-
-    // Find the admin's employee record to get company
-    const adminEmployee = await db.employee.findFirst({
-      where: { email: admin.email },
-      include: { company: true }
-    })
-
-    if (!adminEmployee?.company) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
-    }
-
-    // Get all invitations for this company
     const invitations = await db.invitation.findMany({
-      where: { companyId: adminEmployee.company.id },
+      where: { companyId },
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json({
+    return apiResponse.success({
       invitations: invitations.map(inv => ({
         id: inv.id,
         email: inv.email,
@@ -57,9 +34,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Failed to fetch invitations:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch invitations' },
-      { status: 500 }
-    )
+    return apiResponse.internalError('Failed to fetch invitations')
   }
-}
+})

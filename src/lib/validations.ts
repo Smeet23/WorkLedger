@@ -214,6 +214,31 @@ export const githubSyncSchema = z.object({
   repositories: z.array(z.string()).optional(),
 })
 
+// Certificate generation request schema
+export const generateCertificateRequestSchema = z.object({
+  periodMonths: z.coerce.number().int().min(1, 'Period must be at least 1 month').max(24, 'Period must not exceed 24 months').default(3),
+  title: z.string().max(200, 'Title must not exceed 200 characters').optional(),
+  description: z.string().max(1000, 'Description must not exceed 1000 characters').optional(),
+})
+
+// Employee profile update schema
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(1, 'First name is required').max(50, 'First name must not exceed 50 characters').trim().optional(),
+  lastName: z.string().min(1, 'Last name is required').max(50, 'Last name must not exceed 50 characters').trim().optional(),
+  title: z.string().max(100, 'Title must not exceed 100 characters').optional().nullable(),
+  department: z.string().max(100, 'Department must not exceed 100 characters').optional().nullable(),
+  bio: z.string().max(1000, 'Bio must not exceed 1000 characters').optional().nullable(),
+  linkedinUrl: z.string().url('Please enter a valid LinkedIn URL').optional().nullable().or(z.literal('')),
+  personalWebsite: z.string().url('Please enter a valid URL').optional().nullable().or(z.literal('')),
+})
+
+// OAuth state validation schemas
+export const slackOAuthStateSchema = z.object({
+  companyId: z.string().uuid('Invalid company ID'),
+  userId: z.string().min(1, 'User ID is required'),
+  timestamp: z.number().int().positive('Invalid timestamp'),
+})
+
 // File upload schemas
 export const fileUploadSchema = z.object({
   file: z.instanceof(File),
@@ -304,6 +329,9 @@ export type GenerateCertificateData = z.infer<typeof generateCertificateSchema>
 export type CertificateData = z.infer<typeof certificateSchema>
 export type GitHubOAuthData = z.infer<typeof githubOAuthSchema>
 export type GitHubSyncData = z.infer<typeof githubSyncSchema>
+export type GenerateCertificateRequestData = z.infer<typeof generateCertificateRequestSchema>
+export type UpdateProfileData = z.infer<typeof updateProfileSchema>
+export type SlackOAuthStateData = z.infer<typeof slackOAuthStateSchema>
 export type FileUploadData = z.infer<typeof fileUploadSchema>
 export type CSVUploadData = z.infer<typeof csvUploadSchema>
 export type ApiKeyData = z.infer<typeof apiKeySchema>

@@ -10,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function EditProfilePage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [userRole, setUserRole] = useState<'company_admin' | 'employee'>('employee')
@@ -77,13 +79,25 @@ export default function EditProfilePage() {
       })
 
       if (response.ok) {
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been saved successfully.",
+        })
         router.push('/employee/dashboard')
       } else {
-        alert('Failed to update profile. Please try again.')
+        toast({
+          title: "Error",
+          description: "Failed to update profile. Please try again.",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Failed to update profile:', error)
-      alert('Failed to update profile. Please try again.')
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSaving(false)
     }

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/use-toast'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 interface JiraStatus {
   connected: boolean
@@ -30,6 +32,8 @@ export default function JiraIntegrationPage() {
   const [registeringWebhook, setRegisteringWebhook] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
+  const { toast } = useToast()
 
   // Check for success/error in URL params
   useEffect(() => {
@@ -116,10 +120,10 @@ export default function JiraIntegrationPage() {
       }
 
       setSuccess(true)
-      const idsText = data.webhook.ids
-        ? `\nWebhook IDs: ${data.webhook.ids.join(', ')}`
-        : ''
-      alert(`✅ Webhook registered successfully!\n\n${data.webhook.message}${idsText}\n\nJira will now send real-time updates to WorkLedger.`)
+      toast({
+        title: "Webhook registered successfully!",
+        description: `${data.webhook.message}. Jira will now send real-time updates to WorkLedger.`,
+      })
     } catch (err) {
       console.error('Error registering webhook:', err)
       setError(err instanceof Error ? err.message : 'Webhook registration failed')
@@ -129,10 +133,6 @@ export default function JiraIntegrationPage() {
   }
 
   const handleDisconnect = async () => {
-    if (!confirm('Are you sure you want to disconnect Jira? This will deactivate the integration.')) {
-      return
-    }
-
     try {
       const response = await fetch('/api/jira/disconnect', {
         method: 'POST',
@@ -144,10 +144,16 @@ export default function JiraIntegrationPage() {
         throw new Error(data.error || 'Disconnect failed')
       }
 
+      toast({
+        title: "Jira disconnected",
+        description: "The integration has been deactivated.",
+      })
       await fetchStatus() // Refresh status
     } catch (err) {
       console.error('Error disconnecting:', err)
       setError(err instanceof Error ? err.message : 'Disconnect failed')
+    } finally {
+      setShowDisconnectDialog(false)
     }
   }
 
@@ -250,11 +256,20 @@ export default function JiraIntegrationPage() {
                 {registeringWebhook ? 'Registering...' : '🪝 Enable Webhooks'}
               </button>
               <button
-                onClick={handleDisconnect}
+                onClick={() => setShowDisconnectDialog(true)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Disconnect
               </button>
+              <ConfirmationDialog
+                open={showDisconnectDialog}
+                onOpenChange={setShowDisconnectDialog}
+                title="Disconnect Jira"
+                description="Are you sure you want to disconnect Jira? This will deactivate the integration."
+                confirmText="Disconnect"
+                variant="destructive"
+                onConfirm={handleDisconnect}
+              />
             </div>
           </div>
         ) : (

@@ -5,12 +5,25 @@ import { getToken } from "next-auth/jwt"
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
 
+  // Define public routes that don't require authentication
+  const publicRoutes = [
+    '/',
+    '/pricing',
+    '/privacy',
+    '/terms',
+    '/verify',
+    '/profile',
+  ]
+
   // Define route types
   const isAuthPage = pathname.startsWith('/auth')
   const isApiRoute = pathname.startsWith('/api')
   const isHomePage = pathname === '/'
   const isStaticAsset = pathname.startsWith('/_next') || pathname === '/favicon.ico'
-  const isProtectedPage = !isAuthPage && !isApiRoute && !isHomePage && !isStaticAsset
+  const isPublicPage = publicRoutes.some(route =>
+    pathname === route || pathname.startsWith(route + '/')
+  )
+  const isProtectedPage = !isAuthPage && !isApiRoute && !isPublicPage && !isStaticAsset
 
   // Allow static assets
   if (isStaticAsset) {

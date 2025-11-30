@@ -1,29 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { db } from '@/lib/db'
+import { withAuth } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+const apiResponse = createApiResponse()
+
+export const GET = withAuth(async (request, { employee }) => {
   try {
-    // Check authentication
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get employee record
-    const employee = await db.employee.findFirst({
-      where: { email: session.user.email }
-    })
-
-    if (!employee) {
-      return NextResponse.json({
-        connected: false,
-        connection: null
-      })
-    }
-
     // Check GitHub connection
     const connection = await db.gitHubConnection.findUnique({
       where: { employeeId: employee.id },
@@ -37,7 +21,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!connection || !connection.isActive) {
-      return NextResponse.json({
+      return apiResponse.success({
         connected: false,
         connection: null
       })
@@ -56,7 +40,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    return apiResponse.success({
       connected: true,
       connection: {
         ...connection,
@@ -66,9 +50,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('GitHub status error:', error)
-    return NextResponse.json(
-      { error: 'Failed to get GitHub status' },
-      { status: 500 }
-    )
+    return apiResponse.internalError('Failed to get GitHub status')
   }
-}
+})

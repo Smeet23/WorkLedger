@@ -1,4 +1,3 @@
-import { config } from './config'
 import { serializeError, isAppError } from './errors'
 
 // Log levels
@@ -8,6 +7,11 @@ export enum LogLevel {
   INFO = 2,
   DEBUG = 3,
 }
+
+// Safe environment detection that works on both client and server
+const isDev = process.env.NODE_ENV === 'development'
+const appName = process.env.NEXT_PUBLIC_APP_NAME || 'WorkLedger'
+const nodeEnv = process.env.NODE_ENV || 'development'
 
 // Log entry interface
 export interface LogEntry {
@@ -33,7 +37,7 @@ export interface Logger {
 // Base logger implementation
 class BaseLogger implements Logger {
   constructor(
-    private readonly minLevel: LogLevel = config.app.isDev ? LogLevel.DEBUG : LogLevel.INFO
+    private readonly minLevel: LogLevel = isDev ? LogLevel.DEBUG : LogLevel.INFO
   ) {}
 
   private shouldLog(level: LogLevel): boolean {
@@ -71,8 +75,8 @@ class BaseLogger implements Logger {
       timestamp: new Date(),
       context: {
         ...context,
-        environment: config.env.NODE_ENV,
-        appName: config.app.name,
+        environment: nodeEnv,
+        appName: appName,
       },
       error,
     }
@@ -83,7 +87,7 @@ class BaseLogger implements Logger {
 
     const entry = this.createLogEntry(LogLevel.ERROR, message, error, context)
 
-    if (config.app.isDev) {
+    if (isDev) {
       console.error(this.formatMessage(entry))
       if (error instanceof Error && error.stack) {
         console.error(error.stack)
@@ -99,7 +103,7 @@ class BaseLogger implements Logger {
 
     const entry = this.createLogEntry(LogLevel.WARN, message, undefined, context)
 
-    if (config.app.isDev) {
+    if (isDev) {
       console.warn(this.formatMessage(entry))
     } else {
       this.sendToExternalService(entry)
@@ -111,7 +115,7 @@ class BaseLogger implements Logger {
 
     const entry = this.createLogEntry(LogLevel.INFO, message, undefined, context)
 
-    if (config.app.isDev) {
+    if (isDev) {
       console.info(this.formatMessage(entry))
     } else {
       this.sendToExternalService(entry)
@@ -123,7 +127,7 @@ class BaseLogger implements Logger {
 
     const entry = this.createLogEntry(LogLevel.DEBUG, message, undefined, context)
 
-    if (config.app.isDev) {
+    if (isDev) {
       console.debug(this.formatMessage(entry))
     }
     // Don't send debug logs to external service in production

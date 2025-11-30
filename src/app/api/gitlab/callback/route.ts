@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { createApiResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 import { jobManager } from '@/lib/queue'
+import { githubOAuthSchema } from '@/lib/validations'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,14 +41,20 @@ export async function GET(request: Request) {
       )
     }
 
-    if (!code) {
+    // Validate OAuth params with Zod
+    const oauthValidation = githubOAuthSchema.safeParse({ code, state })
+    if (!oauthValidation.success) {
+      logger.warn('GitLab OAuth validation failed', { errors: oauthValidation.error.errors, userId: session.user.id })
       return NextResponse.redirect(
-        new URL('/dashboard/integrations/gitlab?error=no_code', request.url)
+        new URL('/dashboard/integrations/gitlab?error=invalid_params', request.url)
       )
     }
 
+    // Use validated data
+    const validatedCode = oauthValidation.data.code
+
     // Exchange code for access token
-    const tokenData = await GitLabService.exchangeCodeForToken(code)
+    const tokenData = await GitLabService.exchangeCodeForToken(validatedCode)
 
     // Get user info
     const gitlabService = new GitLabService(tokenData.access_token)

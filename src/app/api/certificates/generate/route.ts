@@ -1,29 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/session'
 import { SimpleCertificateGenerator } from '@/services/certificates/simple-generator'
 import { db } from '@/lib/db'
 import { subMonths } from 'date-fns'
+import { generateCertificateRequestSchema } from '@/lib/validations'
+import { ZodError } from 'zod'
+import { withAuth } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
 
-export async function POST(request: NextRequest) {
+const apiResponse = createApiResponse()
+
+export const POST = withAuth(async (request, { employee }) => {
   try {
-    // Check authentication
-    const session = await getServerSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Parse request body
+    // Parse and validate request body
     const body = await request.json()
-    const { periodMonths = 3, title, description } = body
+    const validatedData = generateCertificateRequestSchema.parse(body)
+    const { periodMonths, title, description } = validatedData
 
-    // Get employee record
-    const employee = await db.employee.findFirst({
-      where: { email: session.user.email },
+    // Get full employee record with company
+    const employeeWithCompany = await db.employee.findUnique({
+      where: { id: employee.id },
       include: { company: true }
     })
 
-    if (!employee) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
+    if (!employeeWithCompany) {
+      return apiResponse.notFound('Employee', employee.id)
     }
 
     // Check if employee has skills
@@ -32,10 +31,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (skillCount === 0) {
-      return NextResponse.json(
-        { error: 'No skills tracked. Please sync your GitHub account first.' },
-        { status: 400 }
-      )
+      return apiResponse.badRequest('No skills tracked. Please sync your GitHub account first.')
     }
 
     // Calculate period
@@ -72,9 +68,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      message: 'Certificate generated successfully',
+    return apiResponse.success({
       certificate: {
         id: certificate!.id,
         verificationId: certificate!.verificationId,
@@ -84,15 +78,19 @@ export async function POST(request: NextRequest) {
         fileUrl: certificate!.certificateFile?.fileUrl,
         qrCodeUrl: certificate!.certificateFile?.qrCodeUrl
       }
-    })
+    }, 'Certificate generated successfully')
   } catch (error) {
     console.error('Certificate generation error:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to generate certificate',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
+
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
+      return apiResponse.validation(
+        error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+      )
+    }
+
+    return apiResponse.internalError(
+      error instanceof Error ? error.message : 'Failed to generate certificate'
     )
   }
-}
+})

@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['avatars.githubusercontent.com', 'github.com'],
+    domains: ['avatars.githubusercontent.com', 'github.com', 'gitlab.com', 'secure.gravatar.com'],
     formats: ['image/avif', 'image/webp'],
   },
   // Optimize production builds

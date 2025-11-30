@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card'
 import { MessageSquare, Users, Hash, RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 interface SlackStatus {
   connected: boolean
@@ -36,6 +37,7 @@ export function SlackIntegrationCard() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
 
   useEffect(() => {
     fetchStatus()
@@ -85,10 +87,6 @@ export function SlackIntegrationCard() {
   }
 
   const handleDisconnect = async () => {
-    if (!confirm('Are you sure you want to disconnect Slack? This will stop tracking workspace activity.')) {
-      return
-    }
-
     setDisconnecting(true)
     try {
       const response = await fetch('/api/slack/disconnect', {
@@ -108,6 +106,7 @@ export function SlackIntegrationCard() {
       toast.error('Failed to disconnect Slack')
     } finally {
       setDisconnecting(false)
+      setShowDisconnectDialog(false)
     }
   }
 
@@ -278,7 +277,7 @@ export function SlackIntegrationCard() {
         </Button>
         <Button
           variant="outline"
-          onClick={handleDisconnect}
+          onClick={() => setShowDisconnectDialog(true)}
           disabled={disconnecting}
           className="text-red-600 hover:text-red-700 hover:bg-red-50"
         >
@@ -294,6 +293,16 @@ export function SlackIntegrationCard() {
             </>
           )}
         </Button>
+        <ConfirmationDialog
+          open={showDisconnectDialog}
+          onOpenChange={setShowDisconnectDialog}
+          title="Disconnect Slack"
+          description="Are you sure you want to disconnect Slack? This will stop tracking workspace activity."
+          confirmText="Disconnect"
+          variant="destructive"
+          onConfirm={handleDisconnect}
+          loading={disconnecting}
+        />
       </CardFooter>
     </Card>
   )

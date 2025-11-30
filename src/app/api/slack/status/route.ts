@@ -1,43 +1,17 @@
-/**
- * Slack Connection Status Route
- * Returns the current Slack integration status for a company
- */
-
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { withAuth } from '@/lib/api-auth'
+import { createApiResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+const apiResponse = createApiResponse()
+
+export const GET = withAuth(async (request, { companyId }) => {
   try {
-    // Get authenticated session
-    const session = await getServerSession(authConfig)
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
-        { status: 401 }
-      )
-    }
-
-    // Get user's company
-    const user = await db.employee.findUnique({
-      where: { email: session.user.email },
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
     // Get Slack integration
     const integration = await db.slackIntegration.findFirst({
       where: {
-        companyId: user.companyId,
+        companyId,
         isActive: true,
       },
       include: {
@@ -46,7 +20,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!integration) {
-      return NextResponse.json({
+      return apiResponse.success({
         connected: false,
         workspace: null,
         lastSync: null,
@@ -57,24 +31,24 @@ export async function GET(request: NextRequest) {
     const [userCount, channelCount, messageCount] = await Promise.all([
       db.slackUser.count({
         where: {
-          companyId: user.companyId,
+          companyId,
           isDeleted: false,
         },
       }),
       db.slackChannel.count({
         where: {
-          companyId: user.companyId,
+          companyId,
           isArchived: false,
         },
       }),
       db.slackMessage.count({
         where: {
-          companyId: user.companyId,
+          companyId,
         },
       }),
     ])
 
-    return NextResponse.json({
+    return apiResponse.success({
       connected: true,
       workspace: {
         teamId: integration.teamId,
@@ -91,13 +65,7 @@ export async function GET(request: NextRequest) {
       createdAt: integration.createdAt,
     })
   } catch (error) {
-    console.error('❌ Error checking Slack status:', error)
-    return NextResponse.json(
-      {
-        error: 'Failed to check Slack status',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
+    console.error('Error checking Slack status:', error)
+    return apiResponse.internalError('Failed to check Slack status')
   }
-}
+})

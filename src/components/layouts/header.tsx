@@ -143,15 +143,16 @@ export function Header({ user, showBreadcrumbs = true, userRole = "employee" }: 
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label="View notifications">
           <Bell className="h-5 w-5" />
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+          <span className="sr-only">New notifications available</span>
         </Button>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                   {initials}

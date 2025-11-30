@@ -7,15 +7,29 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Github, Link2, Unlink, RefreshCw, CheckCircle, Code2, Zap, AlertCircle, GitBranch, Star, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+
+interface GitHubConnectionData {
+  githubUsername?: string
+  lastSync?: string
+}
+
+interface GitHubSyncData {
+  repositories?: number
+  totalRepos?: number
+  skillCount?: number
+  newRepos?: number
+}
 
 export default function EmployeeGitHubPage() {
   const router = useRouter()
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
-  const [connectionData, setConnectionData] = useState<any>(null)
-  const [syncData, setSyncData] = useState<any>(null)
+  const [connectionData, setConnectionData] = useState<GitHubConnectionData | null>(null)
+  const [syncData, setSyncData] = useState<GitHubSyncData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
 
   useEffect(() => {
     checkConnection()
@@ -47,10 +61,6 @@ export default function EmployeeGitHubPage() {
   }
 
   const handleDisconnect = async () => {
-    if (!confirm('Are you sure you want to disconnect your GitHub account? This will stop tracking your repositories and skills.')) {
-      return
-    }
-
     setIsLoading(true)
     setError(null)
     try {
@@ -72,6 +82,7 @@ export default function EmployeeGitHubPage() {
       setError('Failed to disconnect GitHub. Please try again.')
     } finally {
       setIsLoading(false)
+      setShowDisconnectDialog(false)
     }
   }
 
@@ -319,7 +330,7 @@ export default function EmployeeGitHubPage() {
 
             <div className="pt-4 border-t">
               <Button
-                onClick={handleDisconnect}
+                onClick={() => setShowDisconnectDialog(true)}
                 disabled={isLoading}
                 variant="outline"
                 className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -336,6 +347,16 @@ export default function EmployeeGitHubPage() {
                   </>
                 )}
               </Button>
+              <ConfirmationDialog
+                open={showDisconnectDialog}
+                onOpenChange={setShowDisconnectDialog}
+                title="Disconnect GitHub"
+                description="Are you sure you want to disconnect your GitHub account? This will stop tracking your repositories and skills."
+                confirmText="Disconnect"
+                variant="destructive"
+                onConfirm={handleDisconnect}
+                loading={isLoading}
+              />
             </div>
           </div>
         </CardContent>

@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server"
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { getServerSession } from "@/lib/session"
+import { withCompanyAdmin } from "@/lib/api-auth"
+import { createApiResponse } from "@/lib/api-response"
+
+const apiResponse = createApiResponse()
 
 const inviteEmployeeSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -10,80 +12,48 @@ const inviteEmployeeSchema = z.object({
   role: z.enum(["DEVELOPER", "DESIGNER", "MANAGER", "SALES", "MARKETING", "OTHER"]),
   title: z.string().optional(),
   department: z.string().optional(),
-  companyId: z.string(),
-  companyDomain: z.string(),
-  githubUsername: z.string().optional(), // NEW: Phase 2
+  githubUsername: z.string().optional(),
 })
 
-export async function POST(request: Request) {
+export const POST = withCompanyAdmin(async (request, { user, companyId }) => {
   try {
-    // Verify the user is authenticated and is a company admin
-    const session = await getServerSession()
-
-    if (!session?.user || session.user.role !== "company_admin") {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
     const validatedData = inviteEmployeeSchema.parse(body)
-
-    // Verify that the company exists and the user has access to it
-    const company = await db.company.findUnique({
-      where: { id: validatedData.companyId },
-      include: {
-        employees: {
-          where: { email: session.user.email }
-        }
-      }
-    })
-
-    if (!company || company.employees.length === 0) {
-      return NextResponse.json(
-        { error: "Company not found or access denied" },
-        { status: 403 }
-      )
-    }
 
     // Check if an employee with this email already exists in the company
     const existingEmployee = await db.employee.findFirst({
       where: {
         email: validatedData.email,
-        companyId: validatedData.companyId
+        companyId
       }
     })
 
     if (existingEmployee) {
-      return NextResponse.json(
-        { error: "An employee with this email already exists in your company" },
-        { status: 400 }
-      )
+      return apiResponse.conflict('An employee with this email already exists in your company')
     }
 
     // Check if there's already a pending invitation
     const existingInvitation = await db.invitation.findFirst({
       where: {
         email: validatedData.email,
-        companyId: validatedData.companyId,
+        companyId,
         status: "pending"
       }
     })
 
-    if (existingInvitation) {
-      // NEW: Phase 2 - Find GitHub org member if username provided
-      let githubOrgMember = null
-      if (validatedData.githubUsername) {
-        githubOrgMember = await db.gitHubOrganizationMember.findFirst({
-          where: {
-            companyId: validatedData.companyId,
-            githubUsername: validatedData.githubUsername,
-            isActive: true
-          }
-        })
-      }
+    // Find GitHub org member if username provided
+    let githubOrgMember = null
+    if (validatedData.githubUsername) {
+      githubOrgMember = await db.gitHubOrganizationMember.findFirst({
+        where: {
+          companyId,
+          githubUsername: validatedData.githubUsername,
+          isActive: true
+        }
+      })
+    }
 
+    if (existingInvitation) {
       // Update the existing invitation with new details
       await db.invitation.update({
         where: { id: existingInvitation.id },
@@ -93,18 +63,17 @@ export async function POST(request: Request) {
           role: validatedData.role,
           title: validatedData.title,
           department: validatedData.department,
-          invitedBy: session.user.email,
-          suggestedGithubUsername: validatedData.githubUsername || null, // NEW
-          githubOrgMemberId: githubOrgMember?.id || null, // NEW
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Reset expiry to 7 days
+          invitedBy: user.email,
+          suggestedGithubUsername: validatedData.githubUsername || null,
+          githubOrgMemberId: githubOrgMember?.id || null,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           updatedAt: new Date()
         }
       })
 
       const invitationUrl = `${process.env.NEXTAUTH_URL}/auth/accept-invitation/${existingInvitation.token}`
 
-      return NextResponse.json({
-        message: "Invitation updated and resent",
+      return apiResponse.success({
         invitation: {
           id: existingInvitation.id,
           token: existingInvitation.token,
@@ -116,19 +85,7 @@ export async function POST(request: Request) {
           department: validatedData.department
         },
         invitationUrl
-      })
-    }
-
-    // NEW: Phase 2 - Find GitHub org member if username provided
-    let githubOrgMember = null
-    if (validatedData.githubUsername) {
-      githubOrgMember = await db.gitHubOrganizationMember.findFirst({
-        where: {
-          companyId: validatedData.companyId,
-          githubUsername: validatedData.githubUsername,
-          isActive: true
-        }
-      })
+      }, 'Invitation updated and resent')
     }
 
     // Create a new invitation
@@ -140,22 +97,19 @@ export async function POST(request: Request) {
         role: validatedData.role,
         title: validatedData.title,
         department: validatedData.department,
-        companyId: validatedData.companyId,
-        invitedBy: session.user.email,
-        suggestedGithubUsername: validatedData.githubUsername || null, // NEW
-        githubOrgMemberId: githubOrgMember?.id || null, // NEW
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+        companyId,
+        invitedBy: user.email,
+        suggestedGithubUsername: validatedData.githubUsername || null,
+        githubOrgMemberId: githubOrgMember?.id || null,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       }
     })
 
-    // Generate the invitation URL
     const invitationUrl = `${process.env.NEXTAUTH_URL}/auth/accept-invitation/${invitation.token}`
 
-    // TODO: Send invitation email
     console.log("Invitation URL:", invitationUrl)
 
-    return NextResponse.json({
-      message: "Invitation sent successfully",
+    return apiResponse.created({
       invitation: {
         id: invitation.id,
         token: invitation.token,
@@ -167,21 +121,17 @@ export async function POST(request: Request) {
         department: invitation.department
       },
       invitationUrl
-    })
+    }, 'Invitation sent successfully')
 
   } catch (error) {
     console.error("Employee invitation error:", error)
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input data", details: error.errors },
-        { status: 400 }
+      return apiResponse.validation(
+        error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
       )
     }
 
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    return apiResponse.internalError('Failed to create invitation')
   }
-}
+})
